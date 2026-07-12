@@ -26,6 +26,46 @@ stay verbatim).
 All planned v1 phases are built; see [CONCEPT.md](CONCEPT.md), [PLAN.md](PLAN.md) and
 [DECISIONS.md](DECISIONS.md) for why things are the way they are.
 
+## Flow
+
+```
+ squad run "gh:123"                       (or linear:ABC-123, or plain prompt)
+        │
+        ▼
+ ┌──────────────┐   gh issue view / Linear MCP → task text, slug, closes-ref
+ │    intake    │
+ └──────┬───────┘
+        ▼
+ ┌──────────────┐   git repo? → own worktree + branch (squad/<slug>-<id>)
+ │   worktree   │   plain dir → run in place
+ └──────┬───────┘
+        ▼
+ ┌──────────────┐   frontier model; only tool: delegate(role, task, context)
+ │  SUPERVISOR  │◄────────────────────────────────────────────┐
+ └──────┬───────┘                                             │
+        │ delegate = the single interception point:           │ result
+        │  • handoff logged to logs/<run-id>.jsonl            │ (compressed
+        │  • context compressed by local Ollama if oversized  │  if oversized)
+        │  • cost breaker: total spend > --max-cost → HALT    │
+        ▼                                                     │
+ ┌─────────┬─────────┬─────────┬──────────┐                   │
+ │ planner │  scout  │  coder  │ reviewer │───────────────────┘
+ └────┬────┴────┬────┴────┬────┴────┬─────┘
+      │         │         │         │        each role = own model + prompt
+   subtask   browse/    shell     fs_read    + tool list from squad.yaml;
+   stack     fetch,     (gated),  (read-     unlisted tool = never bound
+             save_doc   fs, git_  only)
+                        commit
+        │
+        ▼
+ ┌──────────────┐   branch + diffstat → push + PR (never | confirm | auto),
+ │   run end    │   body from pr-notes.md; report posted back on the issue;
+ └──────────────┘   run cost + log path printed
+```
+
+Every arrow through `delegate` is logged: task + context in, result out —
+the whole decision trail replayable from one JSONL.
+
 ## Requirements
 
 - Python 3.12+ and [uv](https://docs.astral.sh/uv/)
