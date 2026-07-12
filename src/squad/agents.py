@@ -18,6 +18,16 @@ _SUBTASK_TOOLS = {"set_subtasks": set_subtasks, "next_subtask": next_subtask,
                   "complete_subtask": complete_subtask}
 
 
+def load_prompt(prompt_path: Path) -> str:
+    """Role prompt with `{principles}` expanded to the shared coding law.
+    Opt-in: a role gets the law by putting the token in its prompt file — no code
+    change to add another role. Token absent → prompt returned verbatim."""
+    text = prompt_path.read_text()
+    if "{principles}" in text:
+        text = text.replace("{principles}", (prompt_path.parent / "principles.md").read_text())
+    return text
+
+
 def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str], bool],
                 run_id: str | None = None):
     """One deepagents agent for a role: its model, its prompt, only its tools.
@@ -57,6 +67,6 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
     return create_deep_agent(
         model=chat_model(cfg, role),
         tools=tools,
-        system_prompt=r.prompt.read_text(),
+        system_prompt=load_prompt(r.prompt),
         backend=backend,
     )

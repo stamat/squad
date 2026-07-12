@@ -5,7 +5,10 @@ Point of the project is to apply the best coding practices and reduce the cost b
 
 ## The loop
 
-These rules are like a law in the system. They are the best programming practices:
+These rules are like a law in the system. They are the best programming
+practices. The operational copy lives in [prompts/principles.md](prompts/principles.md)
+and is injected into the coder and reviewer prompts (via the `{principles}`
+token) — keep the two in sync:
 
 - **Test driven development**, assume that the user cares only about the tests and will read tests primarily. Test everything that can be tested.
 - **Focus before features**, or YAGNI, each task should be done with a focus to the task, each function should perform only the one job. Functions should be short, around 20 lines.

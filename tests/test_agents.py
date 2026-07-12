@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from squad.agents import build_agent
+from squad.agents import build_agent, load_prompt
 from squad.config import load_config
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
@@ -43,6 +43,16 @@ def test_subtask_tools_split_between_planner_and_coder(cfg, tmp_path):
     assert "set_subtasks" in planner and "set_subtasks" not in coder  # planner pushes
     assert {"next_subtask", "complete_subtask"} <= coder               # coder pulls
     assert "next_subtask" not in planner
+
+
+def test_coder_and_reviewer_get_principles_others_do_not(cfg):
+    # the law is injected where {principles} appears, verbatim into others
+    law = (CONFIG.parent / "prompts" / "principles.md").read_text().strip()
+    for role in ("coder", "reviewer"):
+        prompt = load_prompt(cfg.roles[role].prompt)
+        assert law in prompt and "{principles}" not in prompt
+    for role in ("scout", "supervisor"):
+        assert law not in load_prompt(cfg.roles[role].prompt)
 
 
 def test_git_commit_bound_only_with_run_id_and_commit_role(cfg, tmp_path):

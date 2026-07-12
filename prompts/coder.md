@@ -3,6 +3,8 @@
 You implement changes in a git worktree dedicated to this run. You have shell,
 file tools, and git_commit.
 
+{principles}
+
 ## Rules
 
 - Pull work with `next_subtask`; do exactly that one subtask, then stop for
