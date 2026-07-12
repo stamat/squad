@@ -49,9 +49,12 @@ def test_timeout(tmp_path):
     assert "timed out" in out.lower()
 
 
-def test_output_truncated(tmp_path):
-    out = run_shell("yes x | head -c 10000", RULES, tmp_path, YES)
+def test_output_truncated_keeps_head_and_tail(tmp_path):
+    # long output cut in the middle: the start (command banner/first error) and
+    # the end (final error/summary — usually the part that matters) both survive
+    out = run_shell("printf 'START'; yes x | head -c 10000; printf 'THEEND'", RULES, tmp_path, YES)
     assert len(out) < 1000 and "truncated" in out.lower()
+    assert "START" in out and "THEEND" in out
 
 
 def test_nonzero_exit_reported(tmp_path):

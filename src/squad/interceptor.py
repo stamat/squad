@@ -1,5 +1,7 @@
 """Interception layer: every model call, shell command, and handoff appends one
-JSONL record to the run's log — full task context, token counts, cost.
+JSONL record to the run's log. Model calls carry accounting only (model, tokens,
+cost); the decision trail — what was done, how, why — lives in the handoff,
+shell, git and compress records.
 
 Uses contextvars so tools and the LiteLLM callback log without plumbing:
 whatever runs inside a run logs to that run.
@@ -101,14 +103,12 @@ class LoggedChat(ChatLiteLLM):
             cost = in_cost + out_cost
         except Exception:
             cost = 0.0  # unknown/local models have no price entry
+        # accounting only — full histories made the log grow O(N²) per run;
+        # the handoff/shell/git records already tell what was decided and why
         log.write(
             "model_call",
             role=self.squad_role,
-            payload={
-                "model": self.model,
-                "messages": [{"type": m.type, "content": m.content} for m in messages],
-                "response": msg.content if msg else None,
-            },
+            payload={"model": self.model},
             tokens={"in": tok_in, "out": tok_out},
             cost_usd=cost,
         )

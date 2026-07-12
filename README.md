@@ -10,10 +10,14 @@ worktrees.
 gated shell, interception log with per-role token/cost accounting, the
 supervisor graph (multi-agent relay, logged handoffs, cost circuit breaker),
 per-run git worktrees with a gated commit tool + run-end PR step, scout
-browsing (`fetch` → trafilatura markdown extraction + Playwright MCP via the MCP loader), and local-model
+browsing (`fetch` → trafilatura markdown extraction + Playwright MCP via the MCP loader), task intake
+(`gh:123` fetches the GitHub issue, `linear:ABC-123` routes to Linear's MCP,
+and the run's report is posted back on the issue), run documents
+(scout persists its report / code style note / PR notes to `logs/<run-id>/`;
+the PR notes become the pull request body), and local-model
 compression at handoff boundaries (oversized context is digested by Ollama
-before crossing between agents; originals stay in the log — a live check
-shrank 449 tokens to 96 with every fact intact).
+before crossing between agents, chunked to fit the local model's window — a
+live check shrank 449 tokens to 96 with every fact intact).
 All planned v1 phases are built; see [PLAN.md](PLAN.md) and
 [DECISIONS.md](DECISIONS.md) for why things are the way they are.
 
@@ -77,6 +81,11 @@ uv run squad run --role coder "create hello.py that prints hi, then run it"
 # another repo
 uv run squad run --repo ~/code/myproject --role reviewer "assess test coverage"
 
+# a GitHub issue: fetched via `gh issue view --json` (exact fields, no token waste);
+# the branch is named after it (squad/gh-123-…) and the run's report is posted
+# back as an issue comment. linear:ABC-123 routes through Linear's MCP server.
+uv run squad run "gh:123"
+
 # unattended: never prompts. Dangerous shell commands are DECLINED (not approved);
 # at run end the branch is pushed and a PR opens automatically (Phase 5) —
 # you decide at merge time instead of during the run.
@@ -85,9 +94,12 @@ uv run squad run --auto "fix the failing test"
 
 ## Logs, tokens, cost
 
-Every run writes an append-only JSONL to `logs/<run-id>.jsonl`: each model
-call (with the full task context sent and the response), every shell command
-and its verdict, every handoff — with token counts and cost per record.
+Every run writes an append-only JSONL to `logs/<run-id>.jsonl`. Model calls
+are accounting records (model, tokens, cost); the decision trail — what was
+done, how and why — lives in the handoff records (task + context in, result
+out), shell commands with their verdicts, commits, and compression digests.
+Run documents the scout saves (`report.md`, `code-style.md`, `pr-notes.md`)
+land next to the log in `logs/<run-id>/`.
 
 ```bash
 uv run squad log            # pretty-print the latest run (--full for whole payloads)
@@ -96,7 +108,8 @@ uv run squad cost           # per role/model: calls, tokens in/out, cost — acr
 ```
 
 **Worktrees:** pointing `--repo` at a git repo gives the run its own worktree
-(`~/.squad/worktrees/<repo>/<run-id>`) and branch (`squad/<run-id>`) — your
+and branch, named from the task (`squad/<slug>-<id>`, e.g. `squad/gh-123-a1b2c3`
+or `squad/fix-the-login-bug-a1b2c3`) — your
 checkout is never touched, and concurrent squads on one repo can't collide.
 Coder commits there via the gated `git_commit` tool (run-id trailer on every
 commit). At run end you get branch + diffstat, then the PR step per
@@ -107,7 +120,9 @@ you've merged. A non-git directory just runs in place, no worktree.
 Shell commands from agents pass a safety gate (`squad.yaml → shell_rules`):
 deny patterns are refused outright (rm -rf /, forkbombs, worktree removal);
 confirm patterns (sudo, git push, pipe-to-shell, rm -rf) pause and ask you.
-Everything else runs cwd-jailed with a timeout, output truncated.
+Everything else runs cwd-jailed with a timeout; long output is cut in the
+middle (head + tail kept) so the agent sees the first error and the final
+summary without drowning its context.
 
 Roles, models, tools, and rules live in [squad.yaml](squad.yaml) — edit it, own it.
 
@@ -145,6 +160,7 @@ roles:                  # a role = model + prompt + tools. Add a block = add a r
 compressor:             # local model that squeezes context between agent handoffs
   model: ollama/qwen3:8b
   trigger_tokens: 50000          # compress when crossing an agent boundary above this
+  window_tokens: 8000            # the local model's context window; input is chunked to fit
   keep_last_messages: 6          # working tail is never compressed
 
 git:
@@ -158,18 +174,19 @@ shell_rules:            # gate for roles that have `shell`
   deny_patterns: [...]           # refused outright, agent is told why
   confirm_patterns: [...]        # pause, ask you in the terminal
   timeout_seconds: 120
-  max_output_bytes: 100000       # output truncated beyond this
+  max_output_bytes: 10000        # agent-visible cap; head+tail kept, middle cut
 
 mcp_servers: {}         # your own tool servers, see below
 ```
 
-Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`,
+Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`
+(read-only — writes are denied by filesystem permissions, not just by prompt),
 `browse` (scout's `search` + `fetch`), `render` (opt-in Playwright MCP),
-`git_commit`, and the subtask stack — `set_subtasks` (planner pushes the
-ordered plan), `next_subtask` / `complete_subtask` (coder pulls one at a time,
-marks each done after review). Every name in a role's `tools` must be a built-in
-or an `mcp_servers` key — config validation fails otherwise (`squad check`
-tells you).
+`git_commit`, `save_doc` (run documents to `logs/<run-id>/`), and the subtask
+stack — `set_subtasks` (planner pushes the ordered plan), `next_subtask` /
+`complete_subtask` (coder pulls one at a time, marks each done after review).
+Every name in a role's `tools` must be a built-in or an `mcp_servers` key —
+config validation fails otherwise (`squad check` tells you).
 
 ## MCP servers (your own tools)
 
@@ -246,4 +263,6 @@ uv run pytest tests/test_rules.py -v   # just the shell-gate security tests
 | `src/squad/interceptor.py` | JSONL run log: model calls, shell, git, handoffs |
 | `src/squad/worktree.py` | per-run worktree/branch lifecycle, PR step, clean |
 | `src/squad/tools/git.py` | `git_commit` tool (commit_roles only, run-id trailer) |
+| `src/squad/intake.py` | task router: `gh:123` / `linear:ABC-123` / plain prompt |
+| `src/squad/tools/docs.py` | `save_doc`: run documents (report, code style, PR notes) |
 | `src/squad/cli.py` | `squad check / ping / run / log / cost / clean` |

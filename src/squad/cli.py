@@ -56,6 +56,7 @@ def run(
     """Run a squad on a task (supervisor graph; --role for a lone agent)."""
     from squad.agents import build_agent  # lazy: heavy imports
     from squad.graph import BudgetExceeded, build_squad
+    from squad.intake import comment_on_issue, resolve_task
     from squad.interceptor import RunLog, current_role
 
     _apply_override(override)
@@ -65,13 +66,22 @@ def run(
         raise typer.Exit(1)
     from squad import worktree as wtree
 
+    # input router: gh:123 fetches the issue, linear:ABC-123 tags it, else pass-through
+    target = (repo or Path.cwd()).resolve()
+    try:
+        job = resolve_task(task, target)
+    except RuntimeError as e:
+        typer.secho(str(e), fg="red", err=True)
+        raise typer.Exit(1) from e
+    task = job.text
+
     log = RunLog.start(LOGS_DIR)
     entry = role or "supervisor"
     current_role.set(entry)
     log.write("handoff", direction="in", payload={"task": task})
     # git repo → own worktree + branch per run; plain dir → work in place
-    target = (repo or Path.cwd()).resolve()
-    wt = wtree.create(target, log.run_id, cfg.git) if (target / ".git").exists() else None
+    wt = (wtree.create(target, log.run_id, cfg.git, slug=job.slug)
+          if (target / ".git").exists() else None)
     if wt:
         typer.secho(f"worktree {wt.path} (branch {wt.branch})", fg="cyan")
     jail = wt.path if wt else target
@@ -92,11 +102,19 @@ def run(
     log.write("handoff", direction="out", payload={"result": answer})
     if not answer.startswith("HALTED"):
         typer.echo(answer)
+    from squad.tools.docs import docs_dir
+
+    def doc_or(name: str, fallback: str) -> str:  # run doc if the scout wrote it
+        p = docs_dir(log.path, log.run_id) / name
+        return p.read_text() if p.exists() else fallback
+
     if wt:
         typer.echo(wtree.summary(wt))
         mode = "auto" if auto else cfg.git.pr
         if mode == "auto" or (mode == "confirm" and typer.confirm("push branch and open a PR?")):
-            typer.echo(wtree.push_and_pr(wt, task))
+            typer.echo(wtree.push_and_pr(wt, task, body=doc_or("pr-notes.md", answer)))
+    if job.gh_issue:  # report back where the task came from
+        typer.echo(comment_on_issue(job.gh_issue, doc_or("report.md", answer), target))
     typer.secho(f"\nrun {log.run_id} — cost ${log.total_cost:.4f} — log: {log.path}", fg="cyan")
     if answer.startswith("HALTED"):
         raise typer.Exit(3)

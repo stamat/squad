@@ -18,6 +18,9 @@ BROWSE_SERVERS = {
 _UA = "Mozilla/5.0 (compatible; squad-scout/1.0)"  # bare urllib UA gets 403'd a lot
 
 
+_FETCH_CAP = 12_000  # hard ceiling on chars returned; max_chars is model-controlled
+
+
 @tool
 def fetch(url: str, max_chars: int = 12_000) -> str:
     """Fetch a URL and return its main content as clean markdown — boilerplate,
@@ -25,6 +28,7 @@ def fetch(url: str, max_chars: int = 12_000) -> str:
     than raw HTML. For JS-rendered pages or interaction, use the browser tools."""
     import trafilatura  # lazy: heavy import, only when scout actually browses
 
+    max_chars = min(max_chars, _FETCH_CAP)  # the model sets max_chars; never let it blow the cap
     try:
         req = urllib.request.Request(url, headers={"User-Agent": _UA})
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -34,9 +38,9 @@ def fetch(url: str, max_chars: int = 12_000) -> str:
     html = raw.decode("utf-8", "replace")
     md = trafilatura.extract(html, output_format="markdown", include_links=True,
                              include_tables=True, include_comments=False)
-    # ponytail: extraction returns None on non-article pages (SERPs, tiny/blocked);
-    # degrade to raw rather than empty. A structured `search` tool is the real fix.
-    md = md or html
+    # non-article pages (SERPs, tiny/blocked) extract to None — degrade to
+    # tag-stripped text, never raw HTML: tag soup was the original token leak
+    md = md or trafilatura.html2txt(html) or "no extractable content on this page"
     return md[:max_chars] + ("\n[truncated]" if len(md) > max_chars else "")
 
 

@@ -1,5 +1,6 @@
-"""Interceptor — every model call and shell command lands in the run's JSONL,
-with task context (messages), token counts, and cost. All offline."""
+"""Interceptor — every model call and shell command lands in the run's JSONL.
+Model calls carry accounting only (model, tokens, cost); the decision trail —
+what was done, how, why — lives in handoff/shell/git/compress records. Offline."""
 
 import json
 from pathlib import Path
@@ -27,7 +28,9 @@ def test_write_creates_valid_jsonl(tmp_path):
     assert rec["ts"]
 
 
-def test_model_call_logged_with_context_tokens_cost(tmp_path):
+def test_model_call_logged_accounting_only(tmp_path):
+    # decisions live in handoff/shell/git records; model_call is pure accounting —
+    # embedding full message history made the log grow O(N²)
     cfg = load_config(CONFIG)
     log = RunLog.start(tmp_path)
     m = chat_model(cfg, "planner")
@@ -35,8 +38,8 @@ def test_model_call_logged_with_context_tokens_cost(tmp_path):
     m.invoke("plan something")
     (rec,) = [r for r in records(log) if r["kind"] == "model_call"]
     assert rec["role"] == "planner"
-    assert "plan something" in json.dumps(rec["payload"]["messages"])  # full task context
-    assert rec["payload"]["response"] == "a plan"
+    assert rec["payload"]["model"]
+    assert "messages" not in rec["payload"] and "response" not in rec["payload"]
     assert rec["tokens"]["in"] > 0 and rec["tokens"]["out"] > 0
 
 

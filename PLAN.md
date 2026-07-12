@@ -81,15 +81,17 @@ squad/
 │   ├── router.py             # role → LiteLLM model string
 │   ├── graph.py              # LangGraph supervisor graph assembly
 │   ├── agents.py             # deepagents SubAgent definitions from config
-│   ├── interceptor.py        # middleware: log every message, count tokens/cost
+│   ├── interceptor.py        # decision log: handoffs/shell/git/compress + model-call accounting
+│   ├── intake.py             # task router: gh:123 / linear:ABC-123 / plain prompt
 │   ├── rules.py              # tool allowlist + shell command gate
 │   ├── worktree.py           # worktree lifecycle: create at run start, list, clean
 │   ├── tools/
 │   │   ├── shell.py          # gated local shell tool
 │   │   ├── git.py            # commit tool (gated); push always human-confirmed
+│   │   ├── docs.py           # save_doc: run documents (report, code style, PR notes)
 │   │   └── mcp.py            # MCP client loader (incl. Playwright MCP)
 │   └── compress.py           # compression node (local model)
-├── logs/                     # runs/<run-id>.jsonl (gitignored)
+├── logs/                     # <run-id>.jsonl + <run-id>/ run docs (gitignored)
 └── tests/
     ├── test_rules.py         # security-relevant — real tests
     ├── test_worktree.py      # isolation between concurrent squads
@@ -222,8 +224,10 @@ only if the hop measurably hurts.)
 
 Every arrow in the architecture diagram passes through `interceptor.py`:
 
-- **Model calls** — LiteLLM success-callback logs every request/response,
-  token counts, cost per role.
+- **Model calls** — accounting records only: model, token counts, cost per
+  role. The decision trail (what was done, how, why) lives in the handoff,
+  shell, git and compress records — full message histories made the log grow
+  O(N²) per run and were dropped deliberately.
 - **Handoffs** — the `delegate` tool is ours; it logs task, passed context,
   and returned result before/after the subagent runs.
 - **Shell & git** — every command + exit code + truncated output; every commit.
@@ -276,7 +280,7 @@ shell_rules:
     - "git\\s+worktree\\s+remove"  # lifecycle belongs to the CLI, not agents
   workdir_jail: <run worktree>  # set per run; commands cwd-jailed to the worktree
   timeout_seconds: 120
-  max_output_bytes: 100000     # truncate, don't flood context
+  max_output_bytes: 10000      # agent-visible cap; head+tail kept, middle cut
 ```
 
 Flow: agent calls `shell(cmd)` → gate checks deny → check confirm (blocking
@@ -396,7 +400,7 @@ tool with cost visibility — if the project stalls there, it still earned its k
 - Docker / sandboxing — deliberate; revisit only for unattended runs.
 - Persistence / memory across runs — each run is fresh; logs are the memory.
 - Plugin system — MCP *is* the plugin system; build nothing bespoke.
-- More than 5 default roles — users add their own in YAML.
+- More than the 6 default roles — users add their own in YAML.
 - Retry/fallback model chains — LiteLLM has fallbacks built in; config-only if wanted, no code.
 
 ## 8. Risks
@@ -409,3 +413,39 @@ tool with cost visibility — if the project stalls there, it still earned its k
 | Runaway supervisor loop burns money | Max-turns + max-cost breakers in Phase 4, before multi-agent exists |
 | Weak model + shell + web content | Capability boundary: browsing role never gets shell bound. Tested, not promised. |
 | Concurrent squads corrupt each other | Worktree isolation; agents denied `git worktree` commands; tested in Phase 5 |
+
+## 9. Open items (backlog)
+
+Deferred work and known soft spots — not out-of-scope, just not done yet.
+
+- **Supervisor history still grows unbounded.** The compression checkpoint
+  gates each handoff *string* at `trigger_tokens`; results below it return to
+  the supervisor's message list uncompressed and accumulate — N delegations →
+  O(N²) input tokens on the supervisor's model. `max_context` and
+  `keep_last_messages` are declared in config but not wired to any live
+  message list. Fix: trim/digest the supervisor history itself (deepagents
+  middleware or a pre-model hook) once it crosses `max_context`.
+- **Loop-limit soft cap is prompt-only.** The ≈3-round review cap lives in the
+  supervisor prompt; hard termination relies on `max_turns` (recursion limit) +
+  `--max-cost`. Upgrade path if the prompt proves unreliable: a per-subtask
+  review counter (reuse the subtask store) that refuses past the cap.
+- **Scribe not yet exercised end-to-end.** The role is wired and delegatable,
+  but the three curation calls (prompt tidy, report shrink, subtask-context
+  select) are supervisor-driven, not forced by code. Prove it in a live run;
+  decide whether any call should be automatic rather than a delegation choice.
+- **New-project viability questions** (competitors / value / effort, in
+  [prompts/scout.md](prompts/scout.md)) are arguably scope-creep vs the YAGNI
+  rule. Keep only if actually used; otherwise cut.
+- **TDD-first not encoded in the coder flow.** The law says tests first, but the
+  coder pulls a subtask and implements; the planner's "Verification" is guidance,
+  not a test-before-code gate. Consider making test-first explicit per subtask.
+- **Linguist-style language detection** (cheap, token-free profiling) not
+  built; scout infers languages from manifests by hand. Fine until repos get
+  big; then a `linguist`-like pass beats burning scout tokens on `ls`.
+
+Resolved since first written: `fs_read` is now write-enforced via
+`FilesystemPermission` (deny-all-writes); scout persists run docs with
+`save_doc`; task intake (`gh:` / `linear:`) routes issues; branches are named
+from the task; PR bodies come from the scout's PR notes; model-call log
+records are accounting-only; shell output is head+tail capped; compressor
+input is chunked to the local model's window; roles default is 6 (§7 updated).

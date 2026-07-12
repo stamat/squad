@@ -47,7 +47,7 @@ Principle: **cheap browses, local compresses, a thinking model curates, mid code
 
 The concept originally lumped both under "compressor." Split them, because they want different model tiers:
 
-- **compressor** shrinks a *given* string — mechanical, faithful token reduction, facts preserved. Fires automatically at every `delegate` handoff over `trigger_tokens`; originals always land in the JSONL log, only the live context shrinks. Local / free model — it runs constantly.
+- **compressor** shrinks a *given* string — mechanical, faithful token reduction, facts preserved. Fires automatically at every `delegate` handoff over `trigger_tokens`; input is chunked to the local model's context window so nothing is silently tail-truncated, and the log keeps the digest + before/after token counts (the decision, not the flood it replaced). Local / free model — it runs constantly.
 - **scribe** decides what a string *should contain* — editorial and relevance judgment: fix typos and tighten the incoming prompt, give a one-sentence summary, shrink the discovery report to only what's prompt-relevant, pick which report bits align with each subtask. Deliberate, at named pipeline points. A cheap-mid **thinking** model — a botched judgment corrupts the task spec or feeds the coder wrong context, so it must reason, not just squeeze bytes.
 
 Rule of thumb: **byte-count → compressor; relevance / quality → scribe.**
@@ -185,6 +185,9 @@ PR is created. Loop is complete.
 
 ## Notes
 
-- All the conversation must be logged in a big markdown file. Each role noted before the context.
+- The log keeps **final decisions, not every message**: what was done, how and
+  why — handoffs (task + context in, result out), shell commands and verdicts,
+  commits, compression digests. Model calls are accounting records (model,
+  tokens, cost). Each record carries its role.
 - User should be updated through the CLI on what’s going on as well.
 - Worktrees are the default, not optional. `squad run` creates a per-run worktree + branch before agents start; `squad clean` removes only merged ones; agents are denied `git worktree` by the shell gate. This buys both isolation (each run is sandboxed to its own checkout) and the ability to run several squads on the same codebase in parallel, touching different parts. A push failure (e.g. no origin) degrades to "branch stays local" — the run's work is never lost by the PR step failing.

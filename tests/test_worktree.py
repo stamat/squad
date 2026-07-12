@@ -38,6 +38,22 @@ def test_create_worktree_and_branch(repo, gitcfg):
     assert "squad/run1" in git("branch", "--list", "squad/run1", cwd=repo)
 
 
+def test_slug_names_branch_and_dir(repo, gitcfg):
+    wt = create(repo, "20260712-140000-abc123", gitcfg, slug="gh-42")
+    assert wt.branch == "squad/gh-42-abc123"        # readable + unique tail
+    assert wt.path.name == "gh-42-abc123"           # dir == branch suffix, clean() relies on it
+    assert wt.run_id == "20260712-140000-abc123"    # log identity unchanged
+
+
+def test_clean_maps_slugged_dirs_to_branches(repo, gitcfg):
+    wt = create(repo, "20260712-140000-abc123", gitcfg, slug="fix-login")
+    (wt.path / "app.py").write_text("print('done')\n")
+    git("commit", "-am", "work", cwd=wt.path)
+    git("merge", wt.branch, cwd=repo)
+    assert wt.path in clean(repo, gitcfg)
+    assert not wt.path.exists()
+
+
 def test_two_squads_do_not_collide(repo, gitcfg):
     a, b = create(repo, "runA", gitcfg), create(repo, "runB", gitcfg)
     (a.path / "app.py").write_text("print('from A')\n")

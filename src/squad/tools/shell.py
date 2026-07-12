@@ -36,5 +36,9 @@ def _execute(cmd: str, rules: ShellRules, jail: Path, confirm: Callable[[str], b
         return f"TIMED OUT after {rules.timeout_seconds}s. Not completed."
     out = (proc.stdout + proc.stderr)
     if len(out) > rules.max_output_bytes:
-        out = out[: rules.max_output_bytes] + "\n[output truncated]"
+        # cut the middle: head keeps the banner/first error, tail keeps the final
+        # error/summary — the part that usually matters. A single head-cut fed
+        # the agent 100KB of noise and dropped the conclusion.
+        head, tail = (rules.max_output_bytes * 2) // 3, rules.max_output_bytes // 3
+        out = out[:head] + "\n[... output truncated ...]\n" + out[-tail:]
     return f"exit {proc.returncode}\n{out}"

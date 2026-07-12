@@ -23,9 +23,12 @@ class Worktree:
     branch: str
 
 
-def create(repo: Path, run_id: str, cfg: GitConfig) -> Worktree:
-    branch = cfg.branch_prefix + run_id
-    path = cfg.worktrees_dir.expanduser() / repo.name / run_id
+def create(repo: Path, run_id: str, cfg: GitConfig, slug: str | None = None) -> Worktree:
+    # slug (issue number / task summary) names the branch; the run-id tail keeps
+    # it unique. Dir name == branch suffix so `clean` can map one to the other.
+    name = f"{slug}-{run_id[-6:]}" if slug else run_id
+    branch = cfg.branch_prefix + name
+    path = cfg.worktrees_dir.expanduser() / repo.name / name
     path.parent.mkdir(parents=True, exist_ok=True)
     _git("worktree", "add", str(path), "-b", branch, cwd=repo)
     return Worktree(repo=repo, run_id=run_id, path=path, branch=branch)
@@ -38,8 +41,9 @@ def summary(wt: Worktree) -> str:
     return f"branch {wt.branch}\n{stat}"
 
 
-def push_and_pr(wt: Worktree, title: str) -> str:
-    """Push the run branch and open a PR. CLI-only — never an agent capability."""
+def push_and_pr(wt: Worktree, title: str, body: str | None = None) -> str:
+    """Push the run branch and open a PR. CLI-only — never an agent capability.
+    body: the run's PR notes (what was done and why); falls back to the task."""
     if not _git("rev-list", f"HEAD..{wt.branch}", cwd=wt.repo).strip():
         return f"no commits on {wt.branch} — nothing to push, branch stays local"
     try:
@@ -47,8 +51,8 @@ def push_and_pr(wt: Worktree, title: str) -> str:
     except RuntimeError as e:
         return f"push failed ({str(e)[:200]}) — branch {wt.branch} stays local"
     proc = subprocess.run(
-        ["gh", "pr", "create", "--head", wt.branch,
-         "--title", title[:70], "--body", f"Task: {title}\n\nSquad-Run: {wt.run_id}"],
+        ["gh", "pr", "create", "--head", wt.branch, "--title", title.splitlines()[0][:70],
+         "--body", f"{body or f'Task: {title}'}\n\nSquad-Run: {wt.run_id}"],
         cwd=wt.path, capture_output=True, text=True,
     )
     if proc.returncode == 0:

@@ -1,5 +1,6 @@
 """Compression checkpoint — digests oversized context at agent boundaries,
-logs before/after token counts, originals stay in the JSONL. Offline (model stubbed)."""
+logs the digest + before/after token counts, chunks input to fit the local
+model's window. Offline (model stubbed)."""
 
 import json
 from pathlib import Path
@@ -45,7 +46,29 @@ def test_above_threshold_digested_and_logged(tmp_path, fake_llm):
     assert out == "DIGEST: the gist"
     (rec,) = [r for r in records(log) if r["kind"] == "compress"]
     assert rec["tokens"]["in"] > rec["tokens"]["out"] > 0
-    assert rec["payload"]["original"].startswith("word word")  # original preserved in log
+    # log keeps the decision (the digest), not the flood it replaced
+    assert rec["payload"]["digest"] == "DIGEST: the gist"
+    assert "original" not in rec["payload"]
+
+
+def test_oversized_input_chunked_to_model_window(tmp_path, monkeypatch):
+    # a 50k-token string sent whole would be silently tail-truncated by the
+    # local model's window; input must be chunked so every call fits
+    sent = []
+    real = comp.litellm.completion
+
+    def fake_completion(model, messages, **kw):
+        sent.append(messages[0]["content"])
+        return real(model=model, messages=messages, mock_response="D")
+    monkeypatch.setattr(comp.litellm, "completion", fake_completion)
+
+    RunLog.start(tmp_path)
+    cfg = CompressorConfig(trigger_tokens=20, window_tokens=40)
+    out = comp.compress("word " * 500, cfg)
+    assert len(sent) > 1                                   # chunked, not one giant call
+    limit = cfg.window_tokens // 2 * 4 + len(comp._PROMPT)  # chunk + prompt overhead
+    assert all(len(s) <= limit for s in sent)              # every call fits the window
+    assert out == "\n".join("D" for _ in sent)             # digests joined in order
 
 
 def test_delegate_compresses_oversized_context(tmp_path, fake_llm):

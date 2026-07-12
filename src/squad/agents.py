@@ -4,18 +4,27 @@ a tool not in the role's list is never bound — the agent physically cannot cal
 from pathlib import Path
 from typing import Callable
 
-from deepagents import create_deep_agent
+from deepagents import FilesystemPermission, create_deep_agent
 from deepagents.backends import FilesystemBackend, StateBackend
 from langchain_core.tools import tool
 
 from squad.config import SquadConfig
 from squad.router import chat_model
+from squad.tools.docs import save_doc
 from squad.tools.git import make_git_commit
 from squad.tools.shell import run_shell
 from squad.tools.subtasks import complete_subtask, next_subtask, set_subtasks
 
-_SUBTASK_TOOLS = {"set_subtasks": set_subtasks, "next_subtask": next_subtask,
-                  "complete_subtask": complete_subtask}
+_NAMED_TOOLS = {"set_subtasks": set_subtasks, "next_subtask": next_subtask,
+                "complete_subtask": complete_subtask, "save_doc": save_doc}
+
+
+def fs_permissions(role_tools: list[str]) -> list[FilesystemPermission] | None:
+    """fs_read without fs = read-only, enforced: writes denied on every path.
+    Prompt says "never edits"; this makes it physics, not a request."""
+    if "fs_read" in role_tools and "fs" not in role_tools:
+        return [FilesystemPermission(operations=["write"], paths=["/**"], mode="deny")]
+    return None
 
 
 def load_prompt(prompt_path: Path) -> str:
@@ -43,7 +52,7 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
         from squad.tools import mcp  # lazy: may spawn MCP server processes
         tools += mcp.tools_for_role(r.tools, cfg.mcp_servers)
 
-    for name, fn in _SUBTASK_TOOLS.items():  # planner pushes, coder pulls/completes
+    for name, fn in _NAMED_TOOLS.items():  # planner pushes, coder pulls, scout saves docs
         if name in r.tools:
             tools.append(fn)
 
@@ -57,7 +66,6 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
         tools.append(shell)
 
     # fs / fs_read → deepagents file tools on the real FS, rooted at the jail.
-    # ponytail: fs_read is not read-only yet — enforce via FilesystemPermission in Phase 4.
     if {"fs", "fs_read"} & set(r.tools):
         # virtual_mode=True: paths resolved inside root_dir; blocks '..' and absolute-path escapes
         backend = FilesystemBackend(root_dir=jail, virtual_mode=True)
@@ -69,4 +77,5 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
         tools=tools,
         system_prompt=load_prompt(r.prompt),
         backend=backend,
+        permissions=fs_permissions(r.tools),
     )

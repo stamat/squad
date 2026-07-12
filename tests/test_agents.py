@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from squad.agents import build_agent, load_prompt
+from squad.agents import build_agent, fs_permissions, load_prompt
 from squad.config import load_config
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
@@ -53,6 +53,20 @@ def test_coder_and_reviewer_get_principles_others_do_not(cfg):
         assert law in prompt and "{principles}" not in prompt
     for role in ("scout", "supervisor"):
         assert law not in load_prompt(cfg.roles[role].prompt)
+
+
+def test_scout_gets_save_doc_others_do_not(cfg, tmp_path):
+    assert "save_doc" in bound_tools(build_agent(cfg, "scout", tmp_path, lambda c: False))
+    assert "save_doc" not in bound_tools(build_agent(cfg, "coder", tmp_path, lambda c: False))
+
+
+def test_fs_read_roles_get_write_deny_permission():
+    # read-only is enforced, not asked: fs_read without fs denies every write path
+    (rule,) = fs_permissions(["fs_read"])
+    assert rule.mode == "deny" and rule.operations == ["write"] and rule.paths == ["/**"]
+    assert fs_permissions(["fs", "fs_read"]) is None   # writer roles unrestricted
+    assert fs_permissions(["fs"]) is None
+    assert fs_permissions([]) is None
 
 
 def test_git_commit_bound_only_with_run_id_and_commit_role(cfg, tmp_path):

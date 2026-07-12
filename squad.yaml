@@ -16,7 +16,7 @@ roles:
   scout:
     model: gemini/gemini-3.1-flash-lite
     prompt: prompts/scout.md
-    tools: [browse, fs_read]            # search+fetch+repo read. NO shell. NO fs write.
+    tools: [browse, fs_read, save_doc]  # search+fetch+repo read+run docs. NO shell. NO repo write.
     max_context: 60000
 
   scribe:
@@ -60,7 +60,7 @@ shell_rules:
     - ':\(\)\s*\{.*\};:'
     - 'git\s+worktree\s+remove'
   timeout_seconds: 120
-  max_output_bytes: 100000
+  max_output_bytes: 10000               # agent-visible cap (~2.5k tokens); head+tail kept, middle cut
 
 # MCP servers become tool names bindable in roles[].tools
 # (Playwright wiring lands in Phase 6; "browse" is built-in and maps to it.)

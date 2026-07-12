@@ -55,6 +55,26 @@ def test_fetch_error_is_agent_visible():
     assert "fetch failed" in out.lower()  # returns, never raises
 
 
+def test_fetch_fallback_never_returns_raw_html(local_http, tmp_path):
+    # non-article page (extractor returns None) must degrade to tag-stripped
+    # text, not raw HTML — tag soup was the original token leak
+    (tmp_path / "serp.html").write_text(
+        "<html><head><script>t()</script></head><body>"
+        + "".join(f'<div class="r"><a href="/{i}">result {i}</a></div>' for i in range(40))
+        + "</body></html>")
+    out = mcp.fetch.invoke({"url": f"{local_http}/serp.html"})
+    assert "result 5" in out          # text survives
+    assert "<div" not in out and "<script" not in out  # markup does not
+
+
+def test_fetch_max_chars_is_clamped(local_http, tmp_path):
+    # the model controls max_chars in the tool call; a huge value must not
+    # blow the context cap
+    (tmp_path / "huge.html").write_text("<article><p>" + "word " * 40_000 + "</p></article>")
+    out = mcp.fetch.invoke({"url": f"{local_http}/huge.html", "max_chars": 999_999})
+    assert len(out) <= 12_100  # hard ceiling + truncation marker
+
+
 def test_search_formats_results(monkeypatch):
     class FakeDDGS:
         def text(self, q, max_results=8):

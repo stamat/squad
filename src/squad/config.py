@@ -8,7 +8,7 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 BUILTIN_TOOLS = {"shell", "fs", "fs_read", "browse", "render", "git_commit",
-                 "set_subtasks", "next_subtask", "complete_subtask"}
+                 "set_subtasks", "next_subtask", "complete_subtask", "save_doc"}
 
 
 class RoleConfig(BaseModel):
@@ -22,6 +22,7 @@ class RoleConfig(BaseModel):
 class CompressorConfig(BaseModel):
     model: str = "ollama/qwen3:8b"
     trigger_tokens: int = 50_000
+    window_tokens: int = 8_000  # local model's context window; input is chunked to fit
     keep_last_messages: int = 6
 
 
@@ -43,7 +44,7 @@ class ShellRules(BaseModel):
     confirm_patterns: list[str] = Field(default_factory=list)
     deny_patterns: list[str] = Field(default_factory=list)
     timeout_seconds: int = 120
-    max_output_bytes: int = 100_000
+    max_output_bytes: int = 10_000  # agent-visible cap (~2.5k tokens); 100KB flooded the context
 
     @field_validator("confirm_patterns", "deny_patterns")
     @classmethod

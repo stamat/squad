@@ -1,6 +1,7 @@
 """Compression checkpoint: context crossing an agent boundary above the trigger
-gets digested by the local model. Nothing is lost — the original text goes into
-the JSONL compress record; only live context shrinks."""
+gets digested by the local model. Input is chunked to fit the model's context
+window — sent whole, the tail would be silently truncated before summarizing.
+The log keeps the digest and before/after counts, not the flood it replaced."""
 
 import litellm
 
@@ -23,17 +24,24 @@ def count_tokens(text: str, model: str) -> int:
         return len(text) // 4  # crude fallback; only gates a threshold
 
 
+def _digest(text: str, model: str) -> str:
+    resp = litellm.completion(
+        model=model, messages=[{"role": "user", "content": _PROMPT + text}]
+    )
+    return resp.choices[0].message.content
+
+
 def compress(text: str, cfg: CompressorConfig) -> str:
     """Digest text if it exceeds the trigger; otherwise return it unchanged."""
     before = count_tokens(text, cfg.model)
     if before <= cfg.trigger_tokens:
         return text
-    resp = litellm.completion(
-        model=cfg.model, messages=[{"role": "user", "content": _PROMPT + text}]
-    )
-    digest = resp.choices[0].message.content
+    # half the window for input, half for the prompt + the digest; ~4 chars/token
+    chunk_chars = max(cfg.window_tokens // 2, 1) * 4
+    chunks = [text[i:i + chunk_chars] for i in range(0, len(text), chunk_chars)]
+    digest = "\n".join(_digest(c, cfg.model) for c in chunks)
     after = count_tokens(digest, cfg.model)
     if log := current_log.get():
-        log.write("compress", payload={"original": text, "digest": digest},
+        log.write("compress", payload={"digest": digest, "chunks": len(chunks)},
                   tokens={"in": before, "out": after})
     return digest

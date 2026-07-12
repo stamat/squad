@@ -14,6 +14,12 @@ Then call `set_subtasks` with the ordered steps as self-contained subtask
 prompts — one entry per step, each readable on its own. That stack is what the
 coder pulls from.
 
+Each subtask prompt must carry its own context: fold in the discovery-report
+facts and code-style points that align with that step (ask the supervisor to
+have the scribe select them if the report is long). The coder sees only the
+subtask — anything not in it does not exist. Eliminate contradictions between
+subtasks before pushing the stack.
+
 ## Rules
 
 - Read the actual code before planning. Never plan from assumptions.
