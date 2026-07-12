@@ -12,6 +12,7 @@ from squad.config import SquadConfig
 from squad.router import chat_model
 from squad.tools.docs import save_doc
 from squad.tools.git import make_git_commit
+from squad.tools.profile import make_profile
 from squad.tools.shell import run_shell
 from squad.tools.subtasks import complete_subtask, next_subtask, set_subtasks
 
@@ -55,6 +56,9 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
     for name, fn in _NAMED_TOOLS.items():  # planner pushes, coder pulls, scout saves docs
         if name in r.tools:
             tools.append(fn)
+
+    if "profile" in r.tools:  # linguist-style repo profile, jailed like shell
+        tools.append(make_profile(jail))
 
     if "shell" in r.tools:
         @tool

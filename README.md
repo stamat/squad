@@ -182,7 +182,9 @@ mcp_servers: {}         # your own tool servers, see below
 Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`
 (read-only — writes are denied by filesystem permissions, not just by prompt),
 `browse` (scout's `search` + `fetch`), `render` (opt-in Playwright MCP),
-`git_commit`, `save_doc` (run documents to `logs/<run-id>/`), and the subtask
+`git_commit`, `save_doc` (run documents to `logs/<run-id>/`), `profile`
+(linguist-style language shares + test/lint tooling, one deterministic call —
+no model turns spent exploring), and the subtask
 stack — `set_subtasks` (planner pushes the ordered plan), `next_subtask` /
 `complete_subtask` (coder pulls one at a time, marks each done after review).
 Every name in a role's `tools` must be a built-in or an `mcp_servers` key —
@@ -265,4 +267,5 @@ uv run pytest tests/test_rules.py -v   # just the shell-gate security tests
 | `src/squad/tools/git.py` | `git_commit` tool (commit_roles only, run-id trailer) |
 | `src/squad/intake.py` | task router: `gh:123` / `linear:ABC-123` / plain prompt |
 | `src/squad/tools/docs.py` | `save_doc`: run documents (report, code style, PR notes) |
+| `src/squad/tools/profile.py` | linguist-style repo profile: languages + tooling, zero model turns |
 | `src/squad/cli.py` | `squad check / ping / run / log / cost / clean` |

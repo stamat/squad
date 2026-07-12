@@ -16,7 +16,7 @@ roles:
   scout:
     model: gemini/gemini-3.1-flash-lite
     prompt: prompts/scout.md
-    tools: [browse, fs_read, save_doc]  # search+fetch+repo read+run docs. NO shell. NO repo write.
+    tools: [browse, fs_read, save_doc, profile]  # search+fetch+repo read+run docs+lang profile. NO shell. NO repo write.
     max_context: 60000
 
   scribe:

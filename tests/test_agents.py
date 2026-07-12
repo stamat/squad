@@ -60,6 +60,11 @@ def test_scout_gets_save_doc_others_do_not(cfg, tmp_path):
     assert "save_doc" not in bound_tools(build_agent(cfg, "coder", tmp_path, lambda c: False))
 
 
+def test_scout_gets_profile_others_do_not(cfg, tmp_path):
+    assert "profile" in bound_tools(build_agent(cfg, "scout", tmp_path, lambda c: False))
+    assert "profile" not in bound_tools(build_agent(cfg, "coder", tmp_path, lambda c: False))
+
+
 def test_fs_read_roles_get_write_deny_permission():
     # read-only is enforced, not asked: fs_read without fs denies every write path
     (rule,) = fs_permissions(["fs_read"])

@@ -8,7 +8,8 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 BUILTIN_TOOLS = {"shell", "fs", "fs_read", "browse", "render", "git_commit",
-                 "set_subtasks", "next_subtask", "complete_subtask", "save_doc"}
+                 "set_subtasks", "next_subtask", "complete_subtask", "save_doc",
+                 "profile"}
 
 
 class RoleConfig(BaseModel):

@@ -439,13 +439,11 @@ Deferred work and known soft spots — not out-of-scope, just not done yet.
 - **TDD-first not encoded in the coder flow.** The law says tests first, but the
   coder pulls a subtask and implements; the planner's "Verification" is guidance,
   not a test-before-code gate. Consider making test-first explicit per subtask.
-- **Linguist-style language detection** (cheap, token-free profiling) not
-  built; scout infers languages from manifests by hand. Fine until repos get
-  big; then a `linguist`-like pass beats burning scout tokens on `ls`.
-
 Resolved since first written: `fs_read` is now write-enforced via
 `FilesystemPermission` (deny-all-writes); scout persists run docs with
 `save_doc`; task intake (`gh:` / `linear:`) routes issues; branches are named
 from the task; PR bodies come from the scout's PR notes; model-call log
 records are accounting-only; shell output is head+tail capped; compressor
-input is chunked to the local model's window; roles default is 6 (§7 updated).
+input is chunked to the local model's window; roles default is 6 (§7 updated);
+linguist-style `profile` tool computes language shares + tooling in one
+deterministic call (scout no longer burns turns exploring by hand).

@@ -8,11 +8,10 @@ code style note, PR notes) outside the repo.
 
 ## Discovery — profile the project
 
-- **Languages** — the dominant one and the minor ones, inferred from manifests
-  (`pyproject.toml`, `package.json`, `go.mod`, …) and file extensions, not from
-  a single file.
-- **Test & lint pipeline** — the runners and configs (pytest, ruff, eslint, …)
-  and how they are invoked.
+- **Languages & tooling** — call `profile` FIRST: it computes the language
+  shares (dominant + minor, by bytes) and detects the test/lint tooling in one
+  deterministic call. Don't re-derive what it already tells you; use `fs_read`
+  only to fill gaps (e.g. exact test invocation commands).
 - **README** — read it and summarise the gist relevant to the task.
 - **Files to touch** — investigate the task and list the specific files it will
   likely change.
