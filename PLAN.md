@@ -419,11 +419,14 @@ tool with cost visibility — if the project stalls there, it still earned its k
 
 Deferred work and known soft spots — not out-of-scope, just not done yet.
 
-- **Scribe not yet exercised end-to-end.** The role is wired and delegatable,
-  but the three curation calls (prompt tidy, report shrink, subtask-context
-  select) are supervisor-driven, not forced by code. Prove it in a live run
-  (pending); decide whether any call should be automatic rather than a
-  delegation choice.
+- **Scribe is now code-driven at the pipeline points CONCEPT.md names** —
+  live runs (2026-07-12) proved the supervisor never delegates it by prompt,
+  so the three curation calls fire programmatically: task prompt tidied at
+  intake (`tidy_task`, > `TIDY_TRIGGER` chars), scout report shrunk on the
+  way out of `delegate`, oversized handoff context relevance-filtered before
+  any specialist sees it (both > `SCRIBE_TRIGGER`). Direct delegation stays
+  possible but is no longer load-bearing. Compressor stays: byte-count →
+  compressor, relevance → scribe (CONCEPT rule).
 - **Companion project: local UI with Telegram remote.** A separate
   "mission control" app (not part of squad core) that installs and watches
   multiple squads across multiple projects, streams their run logs, and
@@ -443,8 +446,13 @@ bumps a per-subtask review counter in the subtask store and refuses past
 `REVIEW_CAP` (3) with an escalate message (runs without a subtask stack are
 exempt); scout's new-project viability questions are cut (YAGNI); TDD-first is
 encoded in the flow — the planner's Verification names the test per step, the
-coder writes it first and sees it fail before implementing; `fs_read` is now
-write-enforced via
+coder writes it first and sees it fail before implementing (confirmed live:
+the coder's first commit was the failing test suite); `delegate` survives
+subagent failure — turn overflow (GraphRecursionError) and provider errors
+(litellm timeouts/rate limits) are caught, logged as handoff-out, and returned
+as results the supervisor can react to instead of crashing the run;
+`max_turns` default is 40 (live runs: a TDD coder needs ~30 calls, the relay
+overran 20); `fs_read` is now write-enforced via
 `FilesystemPermission` (deny-all-writes); scout persists run docs with
 `save_doc`; task intake (`gh:` / `linear:`) routes issues; branches are named
 from the task; PR bodies come from the scout's PR notes; model-call log

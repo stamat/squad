@@ -73,6 +73,8 @@ Details: [Start](#start) (install on PATH, `squad init`), [Keyless mode](#keyles
         │  • context compressed by local Ollama if oversized  │  if oversized)
         │  • cost breaker: total spend > --max-cost → HALT    │
         │  • review cap: >3 reviews per subtask → escalate    │
+        │  • scribe pass: long context/report → relevance cut │
+        │    (task prompt itself tidied by scribe at intake)  │
         ▼                                                     │
  ┌─────────┬─────────┬─────────┬──────────┐                   │
  │ planner │  scout  │  coder  │ reviewer │───────────────────┘

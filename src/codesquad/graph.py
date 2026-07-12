@@ -8,6 +8,7 @@ from typing import Callable
 from deepagents import create_deep_agent
 from langchain_core.tools import tool
 from langgraph.errors import GraphRecursionError
+from openai import APIError  # base of every litellm provider exception
 
 from codesquad.agents import build_agent, history_middleware
 from codesquad.config import SquadConfig
@@ -19,16 +20,38 @@ class BudgetExceeded(RuntimeError):
     """Raised by delegate when the run's cost crosses --max-cost. Halts the graph."""
 
 
-def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
-    @tool
-    def delegate(role: str, task: str, context: str = "") -> str:
-        """Hand a task to a specialist role and return its result.
+# scribe passes are code-driven at the pipeline points CONCEPT.md names —
+# task-aware relevance judgment, unlike the compressor's task-blind shrinking.
+# Above these sizes: handoff context / scout reports get curated, the task
+# prompt gets tidied. Below them the text is already small enough to pass raw.
+SCRIBE_TRIGGER = 4000
+TIDY_TRIGGER = 500
 
-        Args:
-            role: which specialist (see roster in your instructions).
-            task: what it must do and what it must hand back.
-            context: only the information it needs — it sees nothing else.
-        """
+
+def tidy_task(scribe, task: str) -> str:
+    """Scribe pass on the incoming task prompt (CONCEPT: tidy before discovery):
+    fix typos, tighten, summarize if long. Short prompts pass through untouched."""
+    if len(task) <= TIDY_TRIGGER:
+        return task
+    log = current_log.get()
+    if log:
+        log.write("handoff", role="scribe", direction="in", payload={"task": task})
+    prev = current_role.get()
+    current_role.set("scribe")
+    try:
+        result = scribe.invoke({"messages": [{"role": "user", "content":
+            f"Tidy this task prompt: fix typos, make it to the point, keep every "
+            f"requirement. If it is long, open with a one-sentence summary.\n\n{task}"}]})
+    finally:
+        current_role.set(prev)
+    answer = result["messages"][-1].text
+    if log:
+        log.write("handoff", role="scribe", direction="out", payload={"result": answer})
+    return answer
+
+
+def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
+    def _run(role: str, task: str, context: str = "") -> str:
         if role not in subagents:
             return f"unknown role {role!r}; available: {', '.join(subagents)}"
         if role == "reviewer":  # hard per-subtask review cap — prompt asks, code enforces
@@ -38,6 +61,13 @@ def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
                         "not re-reviewing — report the open findings and escalate to a human")
         from codesquad.compress import compress  # lazy: avoids import cycle at module load
 
+        # scribe checkpoint: code-driven, not a supervisor choice — oversized
+        # context is relevance-filtered against the task before it crosses
+        if role != "scribe" and "scribe" in subagents and len(context) > SCRIBE_TRIGGER:
+            context = _run("scribe",
+                           "Select only the parts of the context below that bear on this "
+                           f"task; output just the curated text.\n\n## Task\n{task}",
+                           context)
         # compression checkpoint: both directions of the boundary (live message
         # lists are handled separately by history_middleware at max_context)
         context = compress(context, cfg.compressor)
@@ -61,13 +91,37 @@ def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
             if log:
                 log.write("handoff", role=role, direction="out", payload={"result": answer})
             return answer
+        except APIError as e:  # provider failure (timeout, rate limit, …) — same treatment
+            answer = (f"{role} failed on a provider error: {str(e)[:200]}. "
+                      "Retry the delegation once; if it fails again, escalate.")
+            if log:
+                log.write("handoff", role=role, direction="out", payload={"result": answer})
+            return answer
         finally:
             current_role.set(prev)
         answer = result["messages"][-1].text  # str even when content is block-list (thinking models)
+        # scribe checkpoint (CONCEPT: report shrink): a long scout report is
+        # relevance-filtered against the task before the supervisor carries it
+        if role == "scout" and "scribe" in subagents and len(answer) > SCRIBE_TRIGGER:
+            answer = _run("scribe",
+                          "Shrink the report below to only what bears on this task — keep "
+                          f"every task-relevant fact, drop the rest.\n\n## Task\n{task}",
+                          answer)
         answer = compress(answer, cfg.compressor)  # oversized results shrink before hitting supervisor
         if log:
             log.write("handoff", role=role, direction="out", payload={"result": answer[:4000]})
         return answer
+
+    @tool
+    def delegate(role: str, task: str, context: str = "") -> str:
+        """Hand a task to a specialist role and return its result.
+
+        Args:
+            role: which specialist (see roster in your instructions).
+            task: what it must do and what it must hand back.
+            context: only the information it needs — it sees nothing else.
+        """
+        return _run(role, task, context)
 
     return delegate
 

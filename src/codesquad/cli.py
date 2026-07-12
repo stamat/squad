@@ -170,6 +170,9 @@ def run(
     # auto mode declines rather than approves: unattended runs must not self-authorize sudo/rm/pushes
     confirm = (lambda c: False) if auto else (lambda c: typer.confirm(f"allow shell command? {c}"))
     run_id = log.run_id if wt else None
+    if not role and "scribe" in cfg.roles:  # CONCEPT: scribe tidies the prompt before discovery
+        from codesquad.graph import tidy_task
+        task = tidy_task(build_agent(cfg, "scribe", jail, confirm, run_id=run_id), task)
     agent = (build_agent(cfg, role, jail, confirm, run_id=run_id) if role
              else build_squad(cfg, jail, confirm, max_cost, run_id=run_id))
     try:
