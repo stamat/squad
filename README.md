@@ -10,7 +10,7 @@ worktrees.
 gated shell, interception log with per-role token/cost accounting, the
 supervisor graph (multi-agent relay, logged handoffs, cost circuit breaker),
 per-run git worktrees with a gated commit tool + run-end PR step, scout
-browsing (plain `fetch` + Playwright MCP via the MCP loader), and local-model
+browsing (`fetch` → trafilatura markdown extraction + Playwright MCP via the MCP loader), and local-model
 compression at handoff boundaries (oversized context is digested by Ollama
 before crossing between agents; originals stay in the log — a live check
 shrank 449 tokens to 96 with every fact intact).
@@ -164,9 +164,9 @@ mcp_servers: {}         # your own tool servers, see below
 ```
 
 Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`,
-`browse` (Playwright MCP, scout's tool), `git_commit`. Every name in a role's
-`tools` must be a built-in or an `mcp_servers` key — config validation fails
-otherwise (`squad check` tells you).
+`browse` (scout's `search` + `fetch`), `render` (opt-in Playwright MCP),
+`git_commit`. Every name in a role's `tools` must be a built-in or an
+`mcp_servers` key — config validation fails otherwise (`squad check` tells you).
 
 ## MCP servers (your own tools)
 
@@ -210,9 +210,16 @@ roles:
 (Coder can also just `gh issue view 123` through the gated shell — no config
 at all if `gh` is logged in.)
 
-Built-in `browse` (scout's toolset) = a plain `fetch` tool + Playwright MCP
-(`npx @playwright/mcp`, spawned on demand) through the same loader
-([src/squad/tools/mcp.py](src/squad/tools/mcp.py)).
+Built-in `browse` (scout's toolset) = two cheap tools
+([src/squad/tools/mcp.py](src/squad/tools/mcp.py)):
+`search(query)` (DuckDuckGo via `ddgs`, no API key) returns compact
+title/url/snippet results instead of a raw SERP; `fetch(url)` runs the page
+through trafilatura → main content as clean markdown (scripts/nav/styles
+stripped, links kept), ~8–10× fewer tokens than raw HTML — and the cheap scout
+model reasons better without the noise. Heavy `render` (Playwright MCP,
+`npx @playwright/mcp`, spawned on demand) is a separate opt-in tool for
+JS-rendered pages, so a role only pays its cold start + tool-schema tax by
+listing `render` explicitly.
 
 ## Test
 

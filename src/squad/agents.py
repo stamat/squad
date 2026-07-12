@@ -25,7 +25,7 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
         if commit_tool := make_git_commit(cfg, role, jail, run_id):
             tools.append(commit_tool)
 
-    if "browse" in r.tools or set(r.tools) & set(cfg.mcp_servers):
+    if {"browse", "render"} & set(r.tools) or set(r.tools) & set(cfg.mcp_servers):
         from squad.tools import mcp  # lazy: may spawn MCP server processes
         tools += mcp.tools_for_role(r.tools, cfg.mcp_servers)
 

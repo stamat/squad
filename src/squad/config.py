@@ -7,7 +7,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-BUILTIN_TOOLS = {"shell", "fs", "fs_read", "browse", "git_commit"}
+BUILTIN_TOOLS = {"shell", "fs", "fs_read", "browse", "render", "git_commit"}
 
 
 class RoleConfig(BaseModel):

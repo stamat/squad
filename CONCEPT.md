@@ -93,9 +93,13 @@ If it is the new project, supervisor already initialised the repo. Scout perform
 
 #### Web search (scouting loop)
 
-Scout's `browse` tool extracts the text and links from a web page. We need only basic HTML — lists, blockquotes, links, anything that makes reading straightforward — converted to markdown notation. Under the hood this is a plain `fetch` plus Playwright (via MCP) for pages that need a real browser; there is no bespoke Google API. Scout runs a search through `browse`, gets the results, decides if it wants to explore further, and makes a stack of links to read through.
+Scout's browsing is two cheap tools plus one heavy opt-in:
 
-Stack is fetched one by one, compressed by the compressor. and handed back to the scout. Scout then has to decide if the data fetched is useful or follow additional links per each fetch looping through it again.
+- **`search(query)`** — DuckDuckGo, no API key. Returns a compact list of results (title, url, snippet), not a 40KB HTML search page. This is how scout runs a search, gets results, and builds its stack of links to read.
+- **`fetch(url)`** — pulls a page and runs it through trafilatura, returning the **main content as clean markdown** (scripts, nav and styles stripped; text, lists and links kept). ~8–10× fewer tokens than raw HTML, which also lets the cheap scout model reason better. Output is capped on the extracted markdown, not on raw bytes.
+- **`render` (opt-in)** — Playwright via MCP, for JS-rendered pages that need a real browser. Off by default: it carries a heavy cold start and a big tool schema, so a role only pays for it by listing `render` in its tools. `browse` (search + fetch) stays cheap for the common static-page case.
+
+No bespoke Google API, no raw-HTML dumps. Stack is fetched one by one; oversized pages are digested by the compressor and handed back to the scout, which decides if the data is useful or follows more links, looping again.
 
 If we are starting a new project we want to answer the following questions:
 

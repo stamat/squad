@@ -15,17 +15,48 @@ BROWSE_SERVERS = {
 }
 
 
+_UA = "Mozilla/5.0 (compatible; squad-scout/1.0)"  # bare urllib UA gets 403'd a lot
+
+
 @tool
-def fetch(url: str, max_bytes: int = 40_000) -> str:
-    """Fetch a URL and return its raw text content (truncated). For rendered
-    pages or interaction, use the browser tools instead."""
+def fetch(url: str, max_chars: int = 12_000) -> str:
+    """Fetch a URL and return its main content as clean markdown — boilerplate,
+    scripts, nav and styles stripped, links and lists kept. Far fewer tokens
+    than raw HTML. For JS-rendered pages or interaction, use the browser tools."""
+    import trafilatura  # lazy: heavy import, only when scout actually browses
+
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            data = r.read(max_bytes + 1)
+        req = urllib.request.Request(url, headers={"User-Agent": _UA})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            raw = r.read(2_000_000)  # ceiling guards memory; extraction shrinks it anyway
     except Exception as e:  # agent must see why, never crash the run
         return f"fetch failed: {e}"
-    text = data[:max_bytes].decode("utf-8", "replace")
-    return text + ("\n[truncated]" if len(data) > max_bytes else "")
+    html = raw.decode("utf-8", "replace")
+    md = trafilatura.extract(html, output_format="markdown", include_links=True,
+                             include_tables=True, include_comments=False)
+    # ponytail: extraction returns None on non-article pages (SERPs, tiny/blocked);
+    # degrade to raw rather than empty. A structured `search` tool is the real fix.
+    md = md or html
+    return md[:max_chars] + ("\n[truncated]" if len(md) > max_chars else "")
+
+
+@tool
+def search(query: str, max_results: int = 8) -> str:
+    """Web search via DuckDuckGo. Returns a compact list of results
+    (title, url, snippet) — far cheaper than fetching a search page's HTML.
+    Follow up with `fetch` on the URLs worth reading."""
+    from ddgs import DDGS  # lazy: heavy import, only when scout actually searches
+
+    try:
+        results = DDGS().text(query, max_results=max_results)
+    except Exception as e:  # agent must see why, never crash the run
+        return f"search failed: {e}"
+    if not results:
+        return "no results"
+    return "\n".join(
+        f"{i}. {r['title']}\n   {r['href']}\n   {r.get('body', '')}"
+        for i, r in enumerate(results, 1)
+    )
 
 
 def _sync_wrap(t: StructuredTool) -> StructuredTool:
@@ -49,10 +80,11 @@ def load_mcp_tools(servers: dict) -> list:
 
 
 def tools_for_role(role_tools: list[str], mcp_servers: dict) -> list:
-    """Resolve a role's browse/MCP tool names to bound tool objects."""
+    """Resolve a role's browse/render/MCP tool names to bound tool objects."""
     out = []
-    if "browse" in role_tools:
-        out.append(fetch)
+    if "browse" in role_tools:   # cheap: structured search + markdown fetch, no browser
+        out += [search, fetch]
+    if "render" in role_tools:   # heavy, opt-in: Playwright MCP for JS-rendered pages
         out += load_mcp_tools(BROWSE_SERVERS)
     named = {n: c for n, c in mcp_servers.items() if n in role_tools}
     if named:
