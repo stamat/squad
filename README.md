@@ -21,7 +21,7 @@ live check shrank 449 tokens to 96 with every fact intact), and in-loop
 history compression (each role's live message list is summarized by the local
 model when it crosses the role's `max_context`; the last `keep_last_messages`
 stay verbatim).
-All planned v1 phases are built; see [PLAN.md](PLAN.md) and
+All planned v1 phases are built; see [CONCEPT.md](CONCEPT.md), [PLAN.md](PLAN.md) and
 [DECISIONS.md](DECISIONS.md) for why things are the way they are.
 
 ## Requirements
@@ -152,34 +152,34 @@ is config in squad.yaml like any other provider.
 One file, five sections:
 
 ```yaml
-roles:                  # a role = model + prompt + tools. Add a block = add a role.
+roles: # a role = model + prompt + tools. Add a block = add a role.
   coder:
-    model: gemini/gemini-3-pro   # any LiteLLM model string; swap providers by editing this line
-    prompt: prompts/coder.md     # the role's specialization, relative to this file
-    tools: [shell, fs, git_commit]  # capability boundary: unlisted tool = never bound = uncallable
-    max_context: 120000          # live history above this is summarized by the local compressor
-    max_turns: 20                # per-delegation loop cap
+    model: gemini/gemini-3-pro # any LiteLLM model string; swap providers by editing this line
+    prompt: prompts/coder.md # the role's specialization, relative to this file
+    tools: [shell, fs, git_commit] # capability boundary: unlisted tool = never bound = uncallable
+    max_context: 120000 # live history above this is summarized by the local compressor
+    max_turns: 20 # per-delegation loop cap
 
-compressor:             # local model that squeezes context between agent handoffs
+compressor: # local model that squeezes context between agent handoffs
   model: ollama/qwen3:8b
-  trigger_tokens: 50000          # compress when crossing an agent boundary above this
-  window_tokens: 8000            # the local model's context window; input is chunked to fit
-  keep_last_messages: 6          # working tail is never compressed
+  trigger_tokens: 50000 # compress when crossing an agent boundary above this
+  window_tokens: 8000 # the local model's context window; input is chunked to fit
+  keep_last_messages: 6 # working tail is never compressed
 
 git:
-  worktrees_dir: ~/.squad/worktrees  # each run works in its own worktree + branch
+  worktrees_dir: ~/.squad/worktrees # each run works in its own worktree + branch
   branch_prefix: squad/
-  commit_roles: [coder]          # who may call git_commit
-  push: confirm                  # push NEVER happens without a human yes
-  pr: confirm                    # run end: offer push + gh pr create (never | confirm)
+  commit_roles: [coder] # who may call git_commit
+  push: confirm # push NEVER happens without a human yes
+  pr: confirm # run end: offer push + gh pr create (never | confirm)
 
-shell_rules:            # gate for roles that have `shell`
-  deny_patterns: [...]           # refused outright, agent is told why
-  confirm_patterns: [...]        # pause, ask you in the terminal
+shell_rules: # gate for roles that have `shell`
+  deny_patterns: [...] # refused outright, agent is told why
+  confirm_patterns: [...] # pause, ask you in the terminal
   timeout_seconds: 120
-  max_output_bytes: 10000        # agent-visible cap; head+tail kept, middle cut
+  max_output_bytes: 10000 # agent-visible cap; head+tail kept, middle cut
 
-mcp_servers: {}         # your own tool servers, see below
+mcp_servers: {} # your own tool servers, see below
 ```
 
 Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`
@@ -200,16 +200,21 @@ use. Define it, then bind it by name in a role's `tools`:
 
 ```yaml
 mcp_servers:
-  postgres:                      # name = the tool name roles bind
+  postgres: # name = the tool name roles bind
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"]
+    args:
+      [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://localhost/mydb",
+      ]
     transport: stdio
 
 roles:
   analyst:
     model: anthropic/claude-opus-4-8
     prompt: prompts/analyst.md
-    tools: [fs_read, postgres]   # this role can query the DB; nobody else can
+    tools: [fs_read, postgres] # this role can query the DB; nobody else can
 ```
 
 The binding is the security model: a role without `postgres` in its list
@@ -221,15 +226,15 @@ Same pattern for issue trackers — GitHub and Linear ship official MCP servers:
 mcp_servers:
   github:
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-github"]   # reads GITHUB_TOKEN from env
+    args: ["-y", "@modelcontextprotocol/server-github"] # reads GITHUB_TOKEN from env
     transport: stdio
   linear:
-    url: https://mcp.linear.app/sse                       # Linear's hosted MCP
+    url: https://mcp.linear.app/sse # Linear's hosted MCP
     transport: sse
 
 roles:
   planner:
-    tools: [fs_read, github, linear]   # planner reads issues to plan from them
+    tools: [fs_read, github, linear] # planner reads issues to plan from them
 ```
 
 (Coder can also just `gh issue view 123` through the gated shell — no config
@@ -255,20 +260,27 @@ uv run pytest tests/test_rules.py -v   # just the shell-gate security tests
 
 ## Layout
 
-| Path | What |
-|---|---|
-| `squad.yaml` | roles, models, rules, git, MCP servers — the whole product surface |
-| `prompts/*.md` | role specializations |
-| `src/squad/config.py` | config load + validation |
-| `src/squad/router.py` | role → LiteLLM model (incl. override) |
-| `src/squad/rules.py` | shell command gate: deny → confirm → allow |
-| `src/squad/tools/shell.py` | gated executor: jail, timeout, truncation |
-| `src/squad/agents.py` | role config → deepagents agent (tool binding = capability boundary) |
-| `src/squad/graph.py` | supervisor + `delegate` handoff tool + cost breaker |
-| `src/squad/interceptor.py` | JSONL run log: model calls, shell, git, handoffs |
-| `src/squad/worktree.py` | per-run worktree/branch lifecycle, PR step, clean |
-| `src/squad/tools/git.py` | `git_commit` tool (commit_roles only, run-id trailer) |
-| `src/squad/intake.py` | task router: `gh:123` / `linear:ABC-123` / plain prompt |
-| `src/squad/tools/docs.py` | `save_doc`: run documents (report, code style, PR notes) |
-| `src/squad/tools/profile.py` | linguist-style repo profile: languages + tooling, zero model turns |
-| `src/squad/cli.py` | `squad check / ping / run / log / cost / clean` |
+| Path                         | What                                                                |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `squad.yaml`                 | roles, models, rules, git, MCP servers — the whole product surface  |
+| `prompts/*.md`               | role specializations                                                |
+| `src/squad/config.py`        | config load + validation                                            |
+| `src/squad/router.py`        | role → LiteLLM model (incl. override)                               |
+| `src/squad/rules.py`         | shell command gate: deny → confirm → allow                          |
+| `src/squad/tools/shell.py`   | gated executor: jail, timeout, truncation                           |
+| `src/squad/agents.py`        | role config → deepagents agent (tool binding = capability boundary) |
+| `src/squad/graph.py`         | supervisor + `delegate` handoff tool + cost breaker                 |
+| `src/squad/interceptor.py`   | JSONL run log: model calls, shell, git, handoffs                    |
+| `src/squad/worktree.py`      | per-run worktree/branch lifecycle, PR step, clean                   |
+| `src/squad/tools/git.py`     | `git_commit` tool (commit_roles only, run-id trailer)               |
+| `src/squad/intake.py`        | task router: `gh:123` / `linear:ABC-123` / plain prompt             |
+| `src/squad/tools/docs.py`    | `save_doc`: run documents (report, code style, PR notes)            |
+| `src/squad/tools/profile.py` | linguist-style repo profile: languages + tooling, zero model turns  |
+| `src/squad/cli.py`           | `squad check / ping / run / log / cost / clean`                     |
+
+---
+
+Built on the coding practices I've distilled over my 20th year of professional
+experience.
+
+Made with :heart: by [@stamat](https://github.com/stamat)
