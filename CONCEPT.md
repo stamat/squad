@@ -160,11 +160,17 @@ Reviews the pending, not committed, code. Has access to the granular tasks of th
 
 Generates findings on what should be improved and passes them to the coder. Coder makes the update, reviewer compares it to the findings and signs it off.
 
-Once the reviewer signs off, the coder commits the code via its `git_commit` tool — commit message is the subtask prompt. The supervisor tells the coder to resume the next subtask, and so on until all of the subtasks are signed off. Committing is the coder's only write to git; the supervisor holds no tools and never touches the repo directly.
+Once the reviewer signs off, the coder commits the code via its `git_commit` tool. The commit message is a concise **what + why** the coder writes from the subtask — not the raw subtask prompt, which is too long and not commit-shaped. The supervisor tells the coder to resume the next subtask (via `next_subtask`), and so on until all of the subtasks are signed off. Committing is the coder's only write to git; the supervisor holds no tools and never touches the repo directly.
 
 All communication can be compressed, but maybe shouldn’t be between the coder and reviewer.
 
-We should worry here not to make to many review loops. We need a system to limit the loops.
+Review loops are bounded three ways, so the coder↔reviewer cycle can't run away:
+
+- **Hard: recursion cap.** The supervisor's `max_turns` sets a recursion limit on total delegations — the ping-pong physically cannot exceed it.
+- **Hard: cost breaker.** `--max-cost` halts the run before each handoff once spend crosses the ceiling.
+- **Soft: graceful review cap.** The supervisor stops re-reviewing a subtask after a few rounds (≈3) and escalates — reports "needs a human" rather than looping forever on the same finding.
+
+The soft cap makes the stop *legible* (a clean escalation); the two hard caps guarantee termination regardless.
 
 ### Finishing phase
 
