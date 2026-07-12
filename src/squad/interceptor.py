@@ -65,35 +65,48 @@ class RunLog:
             f.write(json.dumps(rec, default=str) + "\n")
 
 
-def _on_model_success(kwargs, response, start_time, end_time) -> None:
-    """LiteLLM success callback — fires for every completion, any provider."""
-    log = current_log.get()
-    if log is None:
-        return
-    usage = getattr(response, "usage", None)
-    try:
-        cost = litellm.completion_cost(completion_response=response)
-    except Exception:
-        cost = 0.0  # unknown/local models have no price entry
-    log.write(
-        "model_call",
-        payload={
-            "model": kwargs.get("model"),
-            "messages": kwargs.get("messages"),  # the full task context sent
-            "response": response.choices[0].message.content if response.choices else None,
-        },
-        tokens={
-            "in": getattr(usage, "prompt_tokens", 0) or 0,
-            "out": getattr(usage, "completion_tokens", 0) or 0,
-        },
-        cost_usd=cost,
-    )
+class _Interceptor(litellm.integrations.custom_logger.CustomLogger):
+    """CustomLogger, not a plain success_callback function: those run in a
+    separate thread, so records could land after the run already ended (and
+    the total_cost breaker would lag). CustomLogger sync events run inline."""
+
+    def log_success_event(self, kwargs, response_obj, start_time, end_time) -> None:
+        log = current_log.get()
+        if log is None:
+            return
+        usage = getattr(response_obj, "usage", None)
+        try:
+            cost = litellm.completion_cost(completion_response=response_obj)
+        except Exception:
+            cost = 0.0  # unknown/local models have no price entry
+        # per-call metadata beats the current_role global: concurrent delegations clobber the global
+        meta = (kwargs.get("litellm_params") or {}).get("metadata") or {}
+        log.write(
+            "model_call",
+            role=meta.get("role"),  # None → falls back to current_role inside write()
+            payload={
+                "model": kwargs.get("model"),
+                "messages": kwargs.get("messages"),  # the full task context sent
+                "response": response_obj.choices[0].message.content if response_obj.choices else None,
+            },
+            tokens={
+                "in": getattr(usage, "prompt_tokens", 0) or 0,
+                "out": getattr(usage, "completion_tokens", 0) or 0,
+            },
+            cost_usd=cost,
+        )
+
+    async def async_log_success_event(self, kwargs, response_obj, start_time, end_time) -> None:
+        self.log_success_event(kwargs, response_obj, start_time, end_time)
+
+
+_interceptor = _Interceptor()
 
 
 def install() -> None:
     """Register the LiteLLM callback (idempotent)."""
-    if _on_model_success not in litellm.success_callback:
-        litellm.success_callback.append(_on_model_success)
+    if _interceptor not in litellm.callbacks:
+        litellm.callbacks.append(_interceptor)
 
 
 def read_run(path: Path) -> list[dict]:

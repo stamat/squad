@@ -79,7 +79,7 @@ def run(
             {"messages": [{"role": "user", "content": task}]},
             config={"recursion_limit": 2 * cfg.roles[entry].max_turns},
         )
-        answer = result["messages"][-1].content
+        answer = result["messages"][-1].text  # str even when content is block-list (thinking models)
     except BudgetExceeded as e:
         answer = f"HALTED: {e}"
         typer.secho(answer, fg="red", err=True)

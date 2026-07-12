@@ -27,6 +27,14 @@ def resolve_model(cfg: SquadConfig, role: str) -> str:
     return os.environ.get("SQUAD_MODEL_OVERRIDE") or cfg.roles[role].model
 
 
+def chat_model(cfg: SquadConfig, role: str):
+    """LangChain chat model for a role, with the role baked into litellm metadata
+    so the interceptor attributes calls correctly even under concurrent delegations."""
+    from langchain_litellm import ChatLiteLLM  # lazy: heavy import
+
+    return ChatLiteLLM(model=resolve_model(cfg, role), model_kwargs={"metadata": {"role": role}})
+
+
 def complete(cfg: SquadConfig, role: str, messages: list[dict], mock: str | None = None, **kwargs):
     """One completion for a role. mock= bypasses the network via LiteLLM's mock_response."""
     model = resolve_model(cfg, role)

@@ -7,10 +7,9 @@ from typing import Callable
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend, StateBackend
 from langchain_core.tools import tool
-from langchain_litellm import ChatLiteLLM
 
 from squad.config import SquadConfig
-from squad.router import resolve_model
+from squad.router import chat_model
 from squad.tools.shell import run_shell
 
 
@@ -37,7 +36,7 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
         backend = StateBackend()  # virtual scratch only; role never touches disk
 
     return create_deep_agent(
-        model=ChatLiteLLM(model=resolve_model(cfg, role)),
+        model=chat_model(cfg, role),
         tools=tools,
         system_prompt=r.prompt.read_text(),
         backend=backend,

@@ -50,7 +50,9 @@ uv run squad run --override ollama_chat/qwen3:8b "create hello.py that prints hi
 ```
 
 Use the `ollama_chat/` prefix for agent runs — `ollama/` lacks native tool
-calling (see DECISIONS.md).
+calling (see DECISIONS.md). Local 8B-class models handle single-role runs
+(`--role coder`) fine but drive the full supervisor relay unreliably — for
+multi-agent runs use real provider keys.
 
 `--override` (or env `SQUAD_MODEL_OVERRIDE`) reroutes every role to the given
 LiteLLM model string — dev/testing shim, never production.

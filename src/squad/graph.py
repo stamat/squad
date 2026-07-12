@@ -7,12 +7,11 @@ from typing import Callable
 
 from deepagents import create_deep_agent
 from langchain_core.tools import tool
-from langchain_litellm import ChatLiteLLM
 
 from squad.agents import build_agent
 from squad.config import SquadConfig
 from squad.interceptor import current_log, current_role
-from squad.router import resolve_model
+from squad.router import chat_model
 
 
 class BudgetExceeded(RuntimeError):
@@ -47,9 +46,9 @@ def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
             )
         finally:
             current_role.set(prev)
-        answer = result["messages"][-1].content
+        answer = result["messages"][-1].text  # str even when content is block-list (thinking models)
         if log:
-            log.write("handoff", role=role, direction="out", payload={"result": str(answer)[:4000]})
+            log.write("handoff", role=role, direction="out", payload={"result": answer[:4000]})
         return answer
 
     return delegate
@@ -64,7 +63,7 @@ def build_squad(cfg: SquadConfig, jail: Path, confirm: Callable[[str], bool], ma
         for name, r in cfg.roles.items() if name != "supervisor"
     )
     return create_deep_agent(
-        model=ChatLiteLLM(model=resolve_model(cfg, "supervisor")),
+        model=chat_model(cfg, "supervisor"),
         tools=[build_delegate(subagents, cfg, max_cost)],
         system_prompt=cfg.roles["supervisor"].prompt.read_text()
         + f"\n\n## Configured roster (delegate by exact name)\n{roster}",

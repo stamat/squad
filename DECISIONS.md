@@ -14,6 +14,15 @@ a few lines: **what** we decided, **why**, and what we rejected.
 - **Focus before features.** New ideas go into PLAN.md or this file, not into
   the current phase's scope.
 
+## 2026-07-12 — Role attribution rides litellm metadata, not the global
+
+Supervisors can issue parallel `delegate` calls; LangGraph runs them
+concurrently, so the `current_role` global gets clobbered (live run showed
+coder's model calls tagged "reviewer"). Fix: `router.chat_model(cfg, role)`
+bakes `metadata={"role": ...}` into each role's model; the interceptor reads
+it from the callback kwargs per call. Global stays only as fallback (and for
+shell records — coder-only in practice).
+
 ## 2026-07-12 — Handoffs go through our `delegate` tool, not deepagents subagents
 
 deepagents has built-in subagent delegation, but our own `delegate` tool is
