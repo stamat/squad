@@ -16,7 +16,7 @@ roles:
   scout:
     model: gemini/gemini-3.1-flash-lite
     prompt: prompts/scout.md
-    tools: [browse]                     # NO shell. NO fs write.
+    tools: [browse, fs_read]            # search+fetch+repo read. NO shell. NO fs write.
     max_context: 60000
 
   coder:
