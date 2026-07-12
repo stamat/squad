@@ -3,7 +3,7 @@
 import re
 from typing import Literal
 
-from squad.config import ShellRules
+from codesquad.config import ShellRules
 
 Verdict = Literal["allow", "confirm", "deny"]
 

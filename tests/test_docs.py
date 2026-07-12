@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from squad.interceptor import RunLog, current_log
-from squad.tools.docs import save_doc
+from codesquad.interceptor import RunLog, current_log
+from codesquad.tools.docs import save_doc
 
 
 def test_save_doc_writes_markdown_next_to_run_log(tmp_path):

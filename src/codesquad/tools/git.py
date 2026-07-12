@@ -6,8 +6,8 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
-from squad.config import SquadConfig
-from squad.interceptor import current_log
+from codesquad.config import SquadConfig
+from codesquad.interceptor import current_log
 
 
 def make_git_commit(cfg: SquadConfig, role: str, worktree: Path, run_id: str):

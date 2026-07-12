@@ -1,5 +1,5 @@
 [project]
-name = "squad"
+name = "codesquad"
 version = "0.1.0"
 description = "Heterogeneous multi-agent squads: route deep-agent work across models by task type, with full traffic interception."
 readme = "README.md"
@@ -24,7 +24,8 @@ dependencies = [
 ]
 
 [project.scripts]
-squad = "squad.cli:main"
+squad = "codesquad.cli:main"
+codesquad = "codesquad.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12.0"]

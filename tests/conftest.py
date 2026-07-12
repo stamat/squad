@@ -3,7 +3,7 @@ Playwright etc.) — stub it everywhere; tests that care monkeypatch their own."
 
 import pytest
 
-from squad.tools import mcp
+from codesquad.tools import mcp
 
 
 @pytest.fixture(autouse=True)

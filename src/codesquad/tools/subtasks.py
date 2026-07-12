@@ -8,7 +8,7 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
-from squad.interceptor import current_log
+from codesquad.interceptor import current_log
 
 
 def _store() -> Path:

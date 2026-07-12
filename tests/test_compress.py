@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from squad import compress as comp
-from squad.config import CompressorConfig, load_config
-from squad.interceptor import RunLog
+from codesquad import compress as comp
+from codesquad.config import CompressorConfig, load_config
+from codesquad.interceptor import RunLog
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 
@@ -74,7 +74,7 @@ def test_oversized_input_chunked_to_model_window(tmp_path, monkeypatch):
 def test_delegate_compresses_oversized_context(tmp_path, fake_llm):
     from langchain_core.messages import AIMessage
 
-    from squad.graph import build_delegate
+    from codesquad.graph import build_delegate
 
     cfg = load_config(CONFIG)
     cfg.compressor.trigger_tokens = 20

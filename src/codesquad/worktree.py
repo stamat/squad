@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from squad.config import GitConfig
+from codesquad.config import GitConfig
 
 
 def _git(*args: str, cwd: Path) -> str:

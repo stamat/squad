@@ -8,13 +8,13 @@ from deepagents import FilesystemPermission, create_deep_agent
 from deepagents.backends import FilesystemBackend, StateBackend
 from langchain_core.tools import tool
 
-from squad.config import SquadConfig
-from squad.router import chat_model
-from squad.tools.docs import save_doc
-from squad.tools.git import make_git_commit
-from squad.tools.profile import make_profile
-from squad.tools.shell import run_shell
-from squad.tools.subtasks import complete_subtask, next_subtask, set_subtasks
+from codesquad.config import SquadConfig
+from codesquad.router import chat_model
+from codesquad.tools.docs import save_doc
+from codesquad.tools.git import make_git_commit
+from codesquad.tools.profile import make_profile
+from codesquad.tools.shell import run_shell
+from codesquad.tools.subtasks import complete_subtask, next_subtask, set_subtasks
 
 _NAMED_TOOLS = {"set_subtasks": set_subtasks, "next_subtask": next_subtask,
                 "complete_subtask": complete_subtask, "save_doc": save_doc}
@@ -28,7 +28,7 @@ def history_middleware(cfg: SquadConfig, role: str) -> list:
     growing O(N²) across delegations."""
     from langchain.agents.middleware import SummarizationMiddleware  # lazy: heavy
 
-    from squad.interceptor import LoggedChat
+    from codesquad.interceptor import LoggedChat
 
     class SquadHistoryCompressor(SummarizationMiddleware):
         """Distinct name so it coexists with deepagents' built-in summarizer,
@@ -72,7 +72,7 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
             tools.append(commit_tool)
 
     if {"browse", "render"} & set(r.tools) or set(r.tools) & set(cfg.mcp_servers):
-        from squad.tools import mcp  # lazy: may spawn MCP server processes
+        from codesquad.tools import mcp  # lazy: may spawn MCP server processes
         tools += mcp.tools_for_role(r.tools, cfg.mcp_servers)
 
     for name, fn in _NAMED_TOOLS.items():  # planner pushes, coder pulls, scout saves docs

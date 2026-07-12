@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from squad import intake
+from codesquad import intake
 
 
 def gh_stub(monkeypatch, stdout="", returncode=0, stderr=""):

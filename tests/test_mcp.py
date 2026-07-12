@@ -6,7 +6,7 @@ import threading
 import pytest
 from langchain_core.tools import tool
 
-from squad.tools import mcp
+from codesquad.tools import mcp
 
 
 @pytest.fixture

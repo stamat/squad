@@ -8,10 +8,10 @@ from typing import Callable
 from deepagents import create_deep_agent
 from langchain_core.tools import tool
 
-from squad.agents import build_agent, history_middleware
-from squad.config import SquadConfig
-from squad.interceptor import current_log, current_role
-from squad.router import chat_model
+from codesquad.agents import build_agent, history_middleware
+from codesquad.config import SquadConfig
+from codesquad.interceptor import current_log, current_role
+from codesquad.router import chat_model
 
 
 class BudgetExceeded(RuntimeError):
@@ -30,7 +30,7 @@ def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
         """
         if role not in subagents:
             return f"unknown role {role!r}; available: {', '.join(subagents)}"
-        from squad.compress import compress  # lazy: avoids import cycle at module load
+        from codesquad.compress import compress  # lazy: avoids import cycle at module load
 
         # compression checkpoint: both directions of the boundary (live message
         # lists are handled separately by history_middleware at max_context)

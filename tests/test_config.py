@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from squad.config import GitConfig, SquadConfig, load_config
+from codesquad.config import GitConfig, SquadConfig, load_config
 
 REPO_ROOT = Path(__file__).parent.parent
 

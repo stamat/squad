@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from squad.config import GitConfig
-from squad.worktree import clean, create, push_and_pr, summary
+from codesquad.config import GitConfig
+from codesquad.worktree import clean, create, push_and_pr, summary
 
 
 def git(*args, cwd):

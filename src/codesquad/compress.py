@@ -5,8 +5,8 @@ The log keeps the digest and before/after counts, not the flood it replaced."""
 
 import litellm
 
-from squad.config import CompressorConfig
-from squad.interceptor import current_log
+from codesquad.config import CompressorConfig
+from codesquad.interceptor import current_log
 
 _PROMPT = (
     "Compress this working context for another AI agent. Caveman style: drop "

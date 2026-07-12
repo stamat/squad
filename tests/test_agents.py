@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from squad.agents import build_agent, fs_permissions, load_prompt
-from squad.config import load_config
+from codesquad.agents import build_agent, fs_permissions, load_prompt
+from codesquad.config import load_config
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 
@@ -68,7 +68,7 @@ def test_scout_gets_profile_others_do_not(cfg, tmp_path):
 def test_history_middleware_wires_max_context_and_keep(cfg):
     # the dead knobs live: max_context triggers history summarization by the
     # local compressor model; keep_last_messages is the untouched tail
-    from squad.agents import history_middleware
+    from codesquad.agents import history_middleware
 
     (mw,) = history_middleware(cfg, "coder")
     assert mw.trigger == ("tokens", cfg.roles["coder"].max_context)

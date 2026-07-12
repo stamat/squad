@@ -436,6 +436,47 @@ wheels = [
 ]
 
 [[package]]
+name = "codesquad"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "ddgs" },
+    { name = "deepagents" },
+    { name = "langchain-litellm" },
+    { name = "langchain-mcp-adapters" },
+    { name = "langgraph" },
+    { name = "litellm" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+    { name = "trafilatura" },
+    { name = "typer" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ddgs", specifier = ">=6.0" },
+    { name = "deepagents", specifier = ">=0.6.12" },
+    { name = "langchain-litellm", specifier = ">=0.7.0" },
+    { name = "langchain-mcp-adapters", specifier = ">=0.3.0" },
+    { name = "langgraph", specifier = ">=1.2.9" },
+    { name = "litellm", specifier = ">=1.91.2" },
+    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "trafilatura", specifier = ">=1.12" },
+    { name = "typer", specifier = ">=0.26.8" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2436,47 +2477,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/f8/5c/48a7d9495be3d1c65
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/c3/6eeb6034408dac0fa653d126c9204ade96b819c936e136c5e8a6897eee9c/socksio-1.0.0-py3-none-any.whl", hash = "sha256:95dc1f15f9b34e8d7b16f06d74b8ccf48f609af32ab33c608d08761c5dcbb1f3", size = 12763, upload-time = "2020-04-17T15:50:31.878Z" },
 ]
-
-[[package]]
-name = "squad"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "ddgs" },
-    { name = "deepagents" },
-    { name = "langchain-litellm" },
-    { name = "langchain-mcp-adapters" },
-    { name = "langgraph" },
-    { name = "litellm" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-    { name = "trafilatura" },
-    { name = "typer" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ddgs", specifier = ">=6.0" },
-    { name = "deepagents", specifier = ">=0.6.12" },
-    { name = "langchain-litellm", specifier = ">=0.7.0" },
-    { name = "langchain-mcp-adapters", specifier = ">=0.3.0" },
-    { name = "langgraph", specifier = ">=1.2.9" },
-    { name = "litellm", specifier = ">=1.91.2" },
-    { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "trafilatura", specifier = ">=1.12" },
-    { name = "typer", specifier = ">=0.26.8" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "sse-starlette"

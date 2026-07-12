@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 
-from squad.config import load_config
-from squad.tools.git import make_git_commit
+from codesquad.config import load_config
+from codesquad.tools.git import make_git_commit
 from tests.test_worktree import git, gitcfg, repo  # fixtures  # noqa: F401
 
 from pathlib import Path
@@ -25,7 +25,7 @@ def test_commit_role_gets_tool_others_none(cfg, tmp_path):
 
 
 def test_commit_stages_commits_with_trailer(cfg, repo, gitcfg):  # noqa: F811
-    from squad.worktree import create
+    from codesquad.worktree import create
 
     wt = create(repo, "run1", gitcfg)
     tool = make_git_commit(cfg, "coder", wt.path, "run1")
@@ -41,7 +41,7 @@ def test_commit_stages_commits_with_trailer(cfg, repo, gitcfg):  # noqa: F811
 
 
 def test_commit_nothing_to_commit(cfg, repo, gitcfg):  # noqa: F811
-    from squad.worktree import create
+    from codesquad.worktree import create
 
     wt = create(repo, "run1", gitcfg)
     tool = make_git_commit(cfg, "coder", wt.path, "run1")

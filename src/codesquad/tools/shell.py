@@ -8,9 +8,9 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
-from squad.config import ShellRules
-from squad.interceptor import current_log
-from squad.rules import check_command
+from codesquad.config import ShellRules
+from codesquad.interceptor import current_log
+from codesquad.rules import check_command
 
 
 def run_shell(cmd: str, rules: ShellRules, jail: Path, confirm: Callable[[str], bool]) -> str:

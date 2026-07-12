@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from langchain_core.messages import AIMessage
 
-from squad.config import load_config
-from squad.graph import BudgetExceeded, build_delegate, build_squad
-from squad.interceptor import RunLog, current_role
+from codesquad.config import load_config
+from codesquad.graph import BudgetExceeded, build_delegate, build_squad
+from codesquad.interceptor import RunLog, current_role
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from squad.config import load_config
-from squad.router import complete, ping_role, resolve_model
+from codesquad.config import load_config
+from codesquad.router import complete, ping_role, resolve_model
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 

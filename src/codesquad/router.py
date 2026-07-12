@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import litellm
 
-from squad.config import SquadConfig
+from codesquad.config import SquadConfig
 
 litellm.suppress_debug_info = True
 
@@ -31,7 +31,7 @@ def chat_model(cfg: SquadConfig, role: str):
     """LangChain chat model for a role. Logging happens inline in the wrapper
     (squad.interceptor.LoggedChat) — litellm callbacks fire on a background
     logging worker, so records could land after the run ended; ours can't."""
-    from squad.interceptor import LoggedChat  # lazy: heavy import
+    from codesquad.interceptor import LoggedChat  # lazy: heavy import
 
     return LoggedChat(model=resolve_model(cfg, role), squad_role=role)
 

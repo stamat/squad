@@ -1,8 +1,8 @@
 """Subtask stack — planner pushes an ordered list, coder pulls one at a time and
 completes them in order. Backed by a JSON file beside the run log."""
 
-from squad.interceptor import RunLog
-from squad.tools import subtasks
+from codesquad.interceptor import RunLog
+from codesquad.tools import subtasks
 
 
 def test_push_pull_complete_in_order(tmp_path):

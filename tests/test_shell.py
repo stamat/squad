@@ -1,7 +1,7 @@
 """Gated shell executor — jail, confirm flow, timeout, truncation. No network, no model."""
 
-from squad.config import ShellRules
-from squad.tools.shell import run_shell
+from codesquad.config import ShellRules
+from codesquad.tools.shell import run_shell
 
 RULES = ShellRules(
     confirm_patterns=[r"\bsudo\b"],

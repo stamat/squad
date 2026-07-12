@@ -6,7 +6,7 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
-from squad.interceptor import current_log
+from codesquad.interceptor import current_log
 
 
 def docs_dir(log_path: Path, run_id: str) -> Path:

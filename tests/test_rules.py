@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from squad.config import load_config
-from squad.rules import check_command
+from codesquad.config import load_config
+from codesquad.rules import check_command
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 

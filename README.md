@@ -1,4 +1,6 @@
-# squad
+# codesquad
+
+> Installs as `codesquad`, driven by the `squad` command.
 
 Personal deep-agent orchestrator: heterogeneous models per role (cheap model
 browses, local model compresses, mid model codes, frontier models plan and
@@ -33,7 +35,7 @@ All planned v1 phases are built; see [CONCEPT.md](CONCEPT.md), [PLAN.md](PLAN.md
 ## Start
 
 ```bash
-git clone <this repo> && cd squad
+git clone https://github.com/stamat/codesquad.git && cd codesquad
 uv sync
 
 # keys (skip for keyless mode)
@@ -44,6 +46,12 @@ uv run squad check
 
 # smoke-test every configured model (latency + cost per role)
 uv run squad ping
+```
+
+Install the `squad` command on your PATH (run it from any repo):
+
+```bash
+uv tool install .        # then just: squad run "…" --repo ~/code/myproject
 ```
 
 ## Keyless mode (no API keys)

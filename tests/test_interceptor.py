@@ -5,10 +5,10 @@ what was done, how, why — lives in handoff/shell/git/compress records. Offline
 import json
 from pathlib import Path
 
-from squad.config import ShellRules, load_config
-from squad.interceptor import RunLog, aggregate, current_log, current_role, read_run
-from squad.router import chat_model
-from squad.tools.shell import run_shell
+from codesquad.config import ShellRules, load_config
+from codesquad.interceptor import RunLog, aggregate, current_log, current_role, read_run
+from codesquad.router import chat_model
+from codesquad.tools.shell import run_shell
 
 CONFIG = Path(__file__).parent.parent / "squad.yaml"
 

@@ -1,6 +1,6 @@
 """Repo profile — languages by byte share, tooling detection, junk dirs skipped."""
 
-from squad.tools.profile import profile_repo
+from codesquad.tools.profile import profile_repo
 
 
 def test_dominant_and_minor_languages_by_bytes(tmp_path):

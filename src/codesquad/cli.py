@@ -7,7 +7,7 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
-from squad.config import SquadConfig, load_config
+from codesquad.config import SquadConfig, load_config
 
 app = typer.Typer(no_args_is_help=True, help="Heterogeneous multi-agent squads with full traffic interception.")
 
@@ -54,17 +54,17 @@ def run(
     auto: bool = typer.Option(False, "--auto", help="Unattended: never prompts. Confirm-gated shell commands are DECLINED (not approved); at run end push + PR happen automatically (Phase 5)."),
 ) -> None:
     """Run a squad on a task (supervisor graph; --role for a lone agent)."""
-    from squad.agents import build_agent  # lazy: heavy imports
-    from squad.graph import BudgetExceeded, build_squad
-    from squad.intake import comment_on_issue, resolve_task
-    from squad.interceptor import RunLog, current_role
+    from codesquad.agents import build_agent  # lazy: heavy imports
+    from codesquad.graph import BudgetExceeded, build_squad
+    from codesquad.intake import comment_on_issue, resolve_task
+    from codesquad.interceptor import RunLog, current_role
 
     _apply_override(override)
     cfg = _load(config)
     if role and role not in cfg.roles:
         typer.secho(f"unknown role {role!r}; have: {', '.join(cfg.roles)}", fg="red", err=True)
         raise typer.Exit(1)
-    from squad import worktree as wtree
+    from codesquad import worktree as wtree
 
     # input router: gh:123 fetches the issue, linear:ABC-123 tags it, else pass-through
     target = (repo or Path.cwd()).resolve()
@@ -102,7 +102,7 @@ def run(
     log.write("handoff", direction="out", payload={"result": answer})
     if not answer.startswith("HALTED"):
         typer.echo(answer)
-    from squad.tools.docs import docs_dir
+    from codesquad.tools.docs import docs_dir
 
     def doc_or(name: str, fallback: str) -> str:  # run doc if the scout wrote it
         p = docs_dir(log.path, log.run_id) / name
@@ -127,7 +127,7 @@ def ping(
     override: str = OVERRIDE_OPT,
 ) -> None:
     """Smoke-test every configured model."""
-    from squad.router import ping_role  # lazy: litellm import is slow
+    from codesquad.router import ping_role  # lazy: litellm import is slow
 
     _apply_override(override)
     cfg = _load(config)
@@ -148,7 +148,7 @@ def log(
     full: bool = typer.Option(False, "--full", help="Print complete payloads (whole task context)"),
 ) -> None:
     """Pretty-print a run's interception log."""
-    from squad.interceptor import read_run
+    from codesquad.interceptor import read_run
 
     files = sorted(LOGS_DIR.glob(f"{run_id or ''}*.jsonl"))
     if not files:
@@ -168,7 +168,7 @@ def log(
 @app.command()
 def cost() -> None:
     """Aggregate cost per role/model across runs."""
-    from squad.interceptor import aggregate
+    from codesquad.interceptor import aggregate
 
     totals = aggregate(LOGS_DIR)
     if not totals:
@@ -186,7 +186,7 @@ def clean(
     config: Path = CONFIG_OPT,
 ) -> None:
     """Remove finished worktrees (branches merged into HEAD)."""
-    from squad.worktree import clean as clean_worktrees
+    from codesquad.worktree import clean as clean_worktrees
 
     cfg = _load(config)
     target = (repo or Path.cwd()).resolve()
