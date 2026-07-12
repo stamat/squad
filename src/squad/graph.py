@@ -37,7 +37,7 @@ def build_delegate(subagents: dict, cfg: SquadConfig, max_cost: float):
         # message lists; wire it if supervisor history itself ever needs digesting.
         context = compress(context, cfg.compressor)
         log = current_log.get()
-        if log and log.total_cost >= max_cost:
+        if log and max_cost > 0 and log.total_cost >= max_cost:  # max_cost <= 0 disables the breaker
             raise BudgetExceeded(f"run cost ${log.total_cost:.4f} reached --max-cost ${max_cost:.2f}")
         if log:
             log.write("handoff", role=role, direction="in",

@@ -76,6 +76,15 @@ def test_budget_breaker_halts(cfg, tmp_path):
     assert fake.calls == []  # never reached the subagent
 
 
+def test_budget_breaker_disabled_when_max_cost_not_positive(cfg, tmp_path):
+    log = RunLog.start(tmp_path)
+    log.write("model_call", cost_usd=99.0)  # way over any sane budget
+    fake = FakeAgent()
+    delegate = build_delegate({"planner": fake}, cfg, max_cost=0)  # <=0 = off
+    delegate.invoke({"role": "planner", "task": "plan"})
+    assert fake.calls != []  # reached the subagent despite the huge cost
+
+
 def test_build_squad_constructs_supervisor_with_delegate(cfg, tmp_path):
     RunLog.start(tmp_path)
     squad = build_squad(cfg, jail=tmp_path, confirm=lambda c: False, max_cost=1.0)
