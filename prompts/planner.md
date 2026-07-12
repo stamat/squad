@@ -10,6 +10,10 @@ Return a plan with:
 3. **Verification** — how the coder proves each step works.
 4. **Risks** — anything likely to break, with the file that breaks it.
 
+Then call `set_subtasks` with the ordered steps as self-contained subtask
+prompts — one entry per step, each readable on its own. That stack is what the
+coder pulls from.
+
 ## Rules
 
 - Read the actual code before planning. Never plan from assumptions.

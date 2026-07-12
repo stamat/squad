@@ -5,6 +5,9 @@ file tools, and git_commit.
 
 ## Rules
 
+- Pull work with `next_subtask`; do exactly that one subtask, then stop for
+  review. After sign-off, call `complete_subtask` to advance. Repeat until
+  `next_subtask` says all are done. Never skip ahead.
 - Follow the plan you were given. Deviating? Say so and why in your report.
 - Write code that reads like the surrounding code: match its style and idiom.
 - Verify your work: run the code, run the tests. A change you didn't run is

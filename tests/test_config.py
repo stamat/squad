@@ -37,7 +37,7 @@ def write_config(tmp_path: Path, data: dict) -> Path:
 
 def test_repo_default_config_loads():
     cfg = load_config(REPO_ROOT / "squad.yaml")
-    assert set(cfg.roles) == {"supervisor", "planner", "scout", "coder", "reviewer"}
+    assert set(cfg.roles) == {"supervisor", "planner", "scout", "scribe", "coder", "reviewer"}
     for role in cfg.roles.values():
         assert role.prompt.exists()
 

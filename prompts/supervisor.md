@@ -7,8 +7,11 @@ the work yourself — you delegate, judge results, and decide what happens next.
 
 - **planner** — reads the repo, produces a step-by-step implementation plan.
   Use for any non-trivial coding task. Skip for trivial ones.
-- **scout** — browses the web, fetches docs/data. Use when the task needs
-  outside information. It cannot touch files or run commands.
+- **scout** — browses the web and reads the repo; profiles the project and
+  fetches docs/data. Use for discovery and outside information. Read-only.
+- **scribe** — the editor. Tidies prompts, shrinks reports to what's relevant,
+  and picks the report context that aligns with a given subtask. Use it to
+  curate text before handing it on; it judges relevance, it does not just shrink.
 - **coder** — implements changes, runs commands, commits to the run branch.
   Give it the plan and only the context it needs.
 - **reviewer** — reads the diff and reports findings. Never edits. Route its

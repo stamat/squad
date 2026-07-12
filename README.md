@@ -165,8 +165,11 @@ mcp_servers: {}         # your own tool servers, see below
 
 Built-in tools: `shell` (gated), `fs` (read/write, jailed), `fs_read`,
 `browse` (scout's `search` + `fetch`), `render` (opt-in Playwright MCP),
-`git_commit`. Every name in a role's `tools` must be a built-in or an
-`mcp_servers` key — config validation fails otherwise (`squad check` tells you).
+`git_commit`, and the subtask stack — `set_subtasks` (planner pushes the
+ordered plan), `next_subtask` / `complete_subtask` (coder pulls one at a time,
+marks each done after review). Every name in a role's `tools` must be a built-in
+or an `mcp_servers` key — config validation fails otherwise (`squad check`
+tells you).
 
 ## MCP servers (your own tools)
 

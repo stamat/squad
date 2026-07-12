@@ -10,7 +10,7 @@ roles:
   planner:
     model: anthropic/claude-opus-4-8    # runs once per task; strong model justified
     prompt: prompts/planner.md
-    tools: [fs_read]                    # reads the repo to plan. Never edits.
+    tools: [fs_read, set_subtasks]      # reads the repo to plan, pushes the stack. Never edits.
     max_context: 100000
 
   scout:
@@ -19,10 +19,16 @@ roles:
     tools: [browse, fs_read]            # search+fetch+repo read. NO shell. NO fs write.
     max_context: 60000
 
+  scribe:
+    model: gemini/gemini-3-flash        # cheap-mid, thinking — curation is judgment
+    prompt: prompts/scribe.md
+    tools: []                           # curates text passed in; no repo/web/shell
+    max_context: 60000
+
   coder:
     model: gemini/gemini-3-pro
     prompt: prompts/coder.md
-    tools: [shell, fs, git_commit]
+    tools: [shell, fs, git_commit, next_subtask, complete_subtask]
     max_context: 120000
 
   reviewer:

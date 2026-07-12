@@ -8,9 +8,11 @@ from squad.config import CompressorConfig
 from squad.interceptor import current_log
 
 _PROMPT = (
-    "Compress the following working context for another AI agent. Keep every "
-    "fact, decision, file path, identifier, and open question; drop repetition "
-    "and prose. Be dense, use bullet points.\n\n"
+    "Compress this working context for another AI agent. Caveman style: drop "
+    "articles, filler, hedging and pleasantries — substance only, fragments "
+    "fine, dense bullets. Keep EXACT: every fact, decision, number, date, file "
+    "path, identifier, API signature, and open question. Code blocks and quoted "
+    "errors stay verbatim. Never invent or drop information.\n\n"
 )
 
 

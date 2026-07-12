@@ -12,6 +12,10 @@ from squad.config import SquadConfig
 from squad.router import chat_model
 from squad.tools.git import make_git_commit
 from squad.tools.shell import run_shell
+from squad.tools.subtasks import complete_subtask, next_subtask, set_subtasks
+
+_SUBTASK_TOOLS = {"set_subtasks": set_subtasks, "next_subtask": next_subtask,
+                  "complete_subtask": complete_subtask}
 
 
 def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str], bool],
@@ -28,6 +32,10 @@ def build_agent(cfg: SquadConfig, role: str, jail: Path, confirm: Callable[[str]
     if {"browse", "render"} & set(r.tools) or set(r.tools) & set(cfg.mcp_servers):
         from squad.tools import mcp  # lazy: may spawn MCP server processes
         tools += mcp.tools_for_role(r.tools, cfg.mcp_servers)
+
+    for name, fn in _SUBTASK_TOOLS.items():  # planner pushes, coder pulls/completes
+        if name in r.tools:
+            tools.append(fn)
 
     if "shell" in r.tools:
         @tool
