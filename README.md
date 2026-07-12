@@ -226,6 +226,11 @@ LiteLLM call your local Ollama HTTP API (`localhost:11434` by default,
 `OLLAMA_API_BASE` to change). Which model — compressor, a role, everything —
 is config in codesquad.yaml like any other provider.
 
+Same goes for any other LiteLLM-supported provider — e.g. a GitHub Copilot
+subscription: `model: github_copilot/gpt-4.1` on a role just works (first call
+runs GitHub's device-flow auth; note Copilot is flat-rate, so those calls
+show $0 in cost accounting and never trip `--max-cost`).
+
 ## codesquad.yaml reference
 
 One file, five sections:
