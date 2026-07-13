@@ -1,6 +1,6 @@
 [project]
 name = "codesquad"
-version = "0.2.0"
+version = "0.2.1"
 description = "Heterogeneous multi-agent squads: route deep-agent work across models by task type, with full traffic interception."
 readme = "README.md"
 license = "MIT"
