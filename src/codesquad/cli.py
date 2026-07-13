@@ -123,7 +123,7 @@ def check(config: Path = CONFIG_OPT) -> None:
 @app.command()
 def run(
     task: str,
-    repo: Path = typer.Option(None, "--repo", help="Target repo (worktree created per run)"),
+    repo: Path = typer.Option('.', "--repo", help="Target repo (worktree created per run)"),
     max_cost: float = typer.Option(0.0, "--max-cost", help="USD circuit breaker; <=0 disables it (default: 0)"),
     config: Path = CONFIG_OPT,
     override: str = OVERRIDE_OPT,
@@ -277,7 +277,7 @@ def cost() -> None:
 
 @app.command()
 def clean(
-    repo: Path = typer.Option(None, "--repo", help="Repo whose run worktrees to clean (default: cwd)"),
+    repo: Path = typer.Option('.', "--repo", help="Repo whose run worktrees to clean (default: cwd)"),
     config: Path = CONFIG_OPT,
 ) -> None:
     """Remove finished worktrees (branches merged into HEAD)."""
