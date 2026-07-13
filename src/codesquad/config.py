@@ -14,6 +14,7 @@ BUILTIN_TOOLS = {"shell", "fs", "fs_read", "browse", "render", "git_commit",
 
 class RoleConfig(BaseModel):
     model: str  # LiteLLM model string, e.g. "anthropic/claude-opus-4-8"
+    effort: Literal["low", "medium", "high", "x-high", "max"] | None = None  # reasoning effort for the role
     prompt: Path | None = None   # role prompt file (relative to config); {principles} expands here
     system: str | None = None    # OR inline system message, straight in the yaml
     tools: list[str] = Field(default_factory=list)
@@ -32,6 +33,7 @@ class RoleConfig(BaseModel):
 
 class CompressorConfig(BaseModel):
     model: str = "ollama/qwen3:8b"
+    effort: Literal["low", "medium", "high", "x-high", "max"] | None = None
     trigger_tokens: int = 50_000
     window_tokens: int = 8_000  # local model's context window; input is chunked to fit
     keep_last_messages: int = 6

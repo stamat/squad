@@ -105,6 +105,7 @@ class LoggedChat(ChatLiteLLM):
     rides on the instance, so concurrent delegations attribute correctly."""
 
     squad_role: str = "?"
+    effort: str | None = None  # reasoning effort for the role
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         result = super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
