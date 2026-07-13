@@ -134,7 +134,7 @@ class LoggedChat(ChatLiteLLM):
         log.write(
             "model_call",
             role=self.squad_role,
-            payload={"model": self.model},
+            payload={"model": self.model, "effort": self.effort},
             tokens={"in": tok_in, "out": tok_out},
             cost_usd=cost,
         )

@@ -3,37 +3,43 @@
 
 roles:
   supervisor:
-    model: gemini/gemini-2.5-flash      # cheap-mid GA (3-flash is preview-only on most keys); it only routes & decides
+    model: anthropic/claude-sonnet-5     # cheap-mid GA (3-flash is preview-only on most keys); it only routes & decides
     prompt: prompts/supervisor.md
+    effort: "low"
     tools: []                           # delegates only, no direct tools
 
   planner:
     model: anthropic/claude-opus-4-8    # runs once per task; strong model justified
     prompt: prompts/planner.md
+    effort: "high"
     tools: [fs_read, set_subtasks]      # reads the repo to plan, pushes the stack. Never edits.
     max_context: 100000
 
   scout:
     model: anthropic/claude-haiku-4-5   # lite-class models loop without finishing the scout brief
     prompt: prompts/scout.md
+    effort: "medium"
     tools: [browse, fs_read, save_doc, profile]  # search+fetch+repo read+run docs+lang profile. NO shell. NO repo write.
     max_context: 60000
 
   scribe:
     model: anthropic/claude-haiku-4-5   # cheap + judgment — curation, not generation
     prompt: prompts/scribe.md
+    effort: "high"
     tools: []                           # curates text passed in; no repo/web/shell
     max_context: 60000
 
   coder:
     model: anthropic/claude-sonnet-5      # near-Opus coding at Sonnet cost; core work
     prompt: prompts/coder.md
+    effort: "high"
     tools: [shell, fs, git_commit, next_subtask, complete_subtask]
     max_context: 120000
 
   reviewer:
     model: anthropic/claude-opus-4-8
     prompt: prompts/reviewer.md
+    effort: "medium"
     tools: [fs_read]                    # read-only. Reviews, never edits.
     max_context: 100000
 

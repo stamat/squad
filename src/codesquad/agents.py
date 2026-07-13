@@ -36,7 +36,7 @@ def history_middleware(cfg: SquadConfig, role: str) -> list:
         models) — far past our budgets. Ours fires at the role's max_context."""
 
     return [SquadHistoryCompressor(
-        model=LoggedChat(model=cfg.compressor.model, squad_role="compressor"),
+        model=LoggedChat(model=cfg.compressor.model, squad_role="compressor", effort=cfg.compressor.effort),
         trigger=("tokens", cfg.roles[role].max_context),
         keep=("messages", cfg.compressor.keep_last_messages),
     )]
