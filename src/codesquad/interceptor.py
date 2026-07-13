@@ -80,6 +80,8 @@ class RunLog:
         head = " ".join(str(head).split())  # newlines/indent → single spaces
         if p.get("verdict"):
             head += f" [{p['verdict']}]"
+        if p.get("model") and p.get("effort"):
+            head += f" {click.style(p['effort'], dim=True)}"
         tok = rec["tokens"] or {}
         meta = f" [{tok.get('in')}→{tok.get('out')} tok, ${rec['cost_usd']:.4f}]" if tok else ""
         arrow = {"in": " →", "out": " ←"}.get(rec["direction"] or "", "")
